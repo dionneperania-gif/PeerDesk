@@ -379,7 +379,7 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
         rightTabs.setForeground(BotanicalTheme.CHARCOAL_TEXT);
 
         rightTabs.addTab("Help Tickets", buildTicketDeskPanel());
-        rightTabs.addTab("Active Classmates", buildUserListPanel());
+        rightTabs.addTab("Active (0)", buildUserListPanel());
 
         card.add(rightTabs, BorderLayout.CENTER);
         return card;
@@ -499,37 +499,96 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
     }
 
     /**
-     * Active Classmates Panel.
+     * Active Panel.
      */
     private JPanel buildUserListPanel() {
         JPanel panel = new JPanel(new BorderLayout(0, 10));
         panel.setOpaque(false);
         panel.setBorder(new EmptyBorder(8, 4, 4, 4));
 
-        peersCountLabel = new JLabel("Active Classmates (0)");
+        peersCountLabel = new JLabel("Active (0)");
         peersCountLabel.setFont(BotanicalTheme.FONT_TITLE_SECTION);
         peersCountLabel.setForeground(BotanicalTheme.DEEP_ROSE);
         panel.add(peersCountLabel, BorderLayout.NORTH);
 
         userListModel = new DefaultListModel<>();
         userList = new JList<>(userListModel);
-        userList.setFont(BotanicalTheme.fontSans(14, Font.PLAIN));
+        userList.setFont(BotanicalTheme.fontSans(13, Font.PLAIN));
         userList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         userList.setBackground(new Color(255, 253, 250));
 
         userList.setCellRenderer((list, value, index, isSelected, cellHasFocus) -> {
-            JLabel lbl = new JLabel("  [Peer]  " + value);
-            lbl.setFont(BotanicalTheme.fontSans(14, Font.PLAIN));
-            lbl.setOpaque(true);
-            if (isSelected) {
-                lbl.setBackground(BotanicalTheme.BLUSH_PINK);
-                lbl.setForeground(BotanicalTheme.DEEP_ROSE);
-            } else {
-                lbl.setBackground(index % 2 == 0 ? Color.WHITE : new Color(254, 250, 252));
-                lbl.setForeground(BotanicalTheme.CHARCOAL_TEXT);
+            JPanel rowPanel = new JPanel(new BorderLayout(8, 0));
+            rowPanel.setOpaque(true);
+            rowPanel.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
+
+            String nick = value != null ? value.toString() : "";
+            JLabel nameLbl = new JLabel(nick);
+            nameLbl.setFont(BotanicalTheme.fontSans(13, Font.BOLD));
+
+            // Compute Peer Activity Badge dynamically based on current tickets:
+            // "Needs Help" -> has OPEN / IN_PROGRESS ticket as requester
+            // "Free to Help" -> is currently assisting / helping with in-progress ticket
+            // "Studying" -> idle online peer
+            String badgeText = "Studying";
+            Color badgeBg = new Color(240, 240, 245);
+            Color badgeFg = BotanicalTheme.MUTED_TEXT;
+
+            boolean hasOpenTicket = false;
+            boolean isHelping = false;
+
+            for (Ticket t : currentTickets) {
+                if (t.getStatus() != Ticket.Status.RESOLVED) {
+                    if (nick.equalsIgnoreCase(t.getRequester())) {
+                        hasOpenTicket = true;
+                    }
+                    String h = t.getHelper();
+                    if (h != null && !"None".equalsIgnoreCase(h)) {
+                        for (String part : h.split(",")) {
+                            if (nick.equalsIgnoreCase(part.trim())) {
+                                isHelping = true;
+                                break;
+                            }
+                        }
+                    }
+                }
             }
-            lbl.setBorder(BorderFactory.createEmptyBorder(7, 10, 7, 10));
-            return lbl;
+
+            if (hasOpenTicket) {
+                badgeText = "Needs Help";
+                badgeBg = BotanicalTheme.BLUSH_PINK;
+                badgeFg = BotanicalTheme.DEEP_ROSE;
+            } else if (isHelping) {
+                badgeText = "Helping";
+                badgeBg = BotanicalTheme.MINT_SOFT;
+                badgeFg = BotanicalTheme.FOREST_DEEP;
+            } else {
+                badgeText = "Free to Help";
+                badgeBg = BotanicalTheme.PASTEL_YELLOW;
+                badgeFg = BotanicalTheme.PASTEL_AMBER;
+            }
+
+            JLabel badgeLbl = new JLabel(" " + badgeText + " ");
+            badgeLbl.setFont(BotanicalTheme.fontSans(10, Font.BOLD));
+            badgeLbl.setOpaque(true);
+            badgeLbl.setBackground(badgeBg);
+            badgeLbl.setForeground(badgeFg);
+            badgeLbl.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(badgeBg.getRed(), badgeBg.getGreen(), badgeBg.getBlue(), 180), 1),
+                    new EmptyBorder(2, 6, 2, 6)
+            ));
+
+            if (isSelected) {
+                rowPanel.setBackground(BotanicalTheme.BLUSH_LIGHT);
+                nameLbl.setForeground(BotanicalTheme.DEEP_ROSE);
+            } else {
+                rowPanel.setBackground(index % 2 == 0 ? Color.WHITE : new Color(254, 250, 252));
+                nameLbl.setForeground(BotanicalTheme.CHARCOAL_TEXT);
+            }
+
+            rowPanel.add(nameLbl, BorderLayout.WEST);
+            rowPanel.add(badgeLbl, BorderLayout.EAST);
+            return rowPanel;
         });
 
         JScrollPane scroll = new JScrollPane(userList);
@@ -757,7 +816,10 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
             resolveTicketBtn.setEnabled(false);
             deleteTicketBtn.setEnabled(false);
             userListModel.clear();
-            peersCountLabel.setText("Active Classmates (0)");
+            peersCountLabel.setText("Active (0)");
+            if (rightTabs != null && rightTabs.getTabCount() > 1) {
+                rightTabs.setTitleAt(1, "Active (0)");
+            }
             currentTickets.clear();
             ticketTableModel.setRowCount(0);
 
@@ -856,7 +918,11 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
         for (String user : users) {
             userListModel.addElement(user);
         }
-        peersCountLabel.setText("Active Classmates (" + users.size() + ")");
+        peersCountLabel.setText("Active (" + users.size() + ")");
+        if (rightTabs != null && rightTabs.getTabCount() > 1) {
+            rightTabs.setTitleAt(1, "Active (" + users.size() + ")");
+        }
+        userList.repaint();
     }
 
     @Override
