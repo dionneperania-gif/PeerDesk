@@ -104,19 +104,27 @@ public class ChatBubbleRow {
         }
     }
 
+    public interface AnnouncementResizeListener {
+        void onResize(int maxAllowedWidth);
+    }
+
     /**
      * Creates a subtle centered system notice row, or a special announcement pill if it mentions a ticket.
      */
     public static JPanel createSystemRow(String timestamp, String message) {
-        return createSystemRow(timestamp, message, null);
+        return createSystemRow(timestamp, message, null, 280);
     }
 
     public static JPanel createSystemRow(String timestamp, String message, TicketActionCallback ticketCallback) {
+        return createSystemRow(timestamp, message, ticketCallback, 280);
+    }
+
+    public static JPanel createSystemRow(String timestamp, String message, TicketActionCallback ticketCallback, int maxAvailableWidth) {
         // Detect if this system message is announcing a ticket: e.g. "Alice submitted ticket #101: [Java] ..."
         java.util.regex.Matcher m = java.util.regex.Pattern.compile("ticket #(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(message);
         if (m.find() && ticketCallback != null) {
             int ticketId = Integer.parseInt(m.group(1));
-            return createTicketAnnouncementRow(timestamp, message, ticketId, ticketCallback);
+            return createTicketAnnouncementRow(timestamp, message, ticketId, ticketCallback, maxAvailableWidth);
         }
 
         JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 4));
@@ -131,48 +139,66 @@ public class ChatBubbleRow {
         return row;
     }
 
-    private static JPanel createTicketAnnouncementRow(String timestamp, String message, int ticketId, TicketActionCallback ticketCallback) {
+    private static JPanel createTicketAnnouncementRow(String timestamp, String message, int ticketId, TicketActionCallback ticketCallback, int maxAvailableWidth) {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 5));
         row.setOpaque(false);
 
-        EditorialCardPanel pill = new EditorialCardPanel(new BorderLayout(8, 0), 16);
+        EditorialCardPanel pill = new EditorialCardPanel(new BorderLayout(8, 8), 16);
         pill.setFillColor(new Color(255, 243, 246));
         pill.setBorderColor(BotanicalTheme.BORDER_ROSE);
-        pill.setBorder(new EmptyBorder(6, 12, 6, 12));
+        pill.setBorder(new EmptyBorder(8, 12, 8, 12));
 
-        JLabel iconLbl = new JLabel("📢");
-        iconLbl.setFont(BotanicalTheme.fontSans(12, Font.PLAIN));
-        pill.add(iconLbl, BorderLayout.WEST);
+        // Top Row: Header Title + Timestamp
+        JPanel topRow = new JPanel(new BorderLayout(6, 0));
+        topRow.setOpaque(false);
 
-        JLabel msgLbl = new JLabel(message + "  (" + timestamp + ")");
-        msgLbl.setFont(BotanicalTheme.fontSans(12, Font.BOLD));
-        msgLbl.setForeground(BotanicalTheme.FOREST_DEEP);
-        msgLbl.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        msgLbl.setToolTipText("Click to view ticket #" + ticketId);
-        msgLbl.addMouseListener(new MouseAdapter() {
+        JLabel headerLbl = new JLabel("New Help Request");
+        headerLbl.setFont(BotanicalTheme.fontSans(12, Font.BOLD));
+        headerLbl.setForeground(BotanicalTheme.DEEP_ROSE);
+        topRow.add(headerLbl, BorderLayout.WEST);
+
+        JLabel timeLbl = new JLabel(timestamp);
+        timeLbl.setFont(BotanicalTheme.fontSans(10, Font.PLAIN));
+        timeLbl.setForeground(new Color(175, 110, 130));
+        topRow.add(timeLbl, BorderLayout.EAST);
+
+        pill.add(topRow, BorderLayout.NORTH);
+
+        // Center: Full wrapping message label sized to chat dialog width
+        int contentW = Math.max(160, maxAvailableWidth - 36);
+        WrapLabel msgLabel = new WrapLabel(message, contentW);
+        msgLabel.setFont(BotanicalTheme.fontSans(12, Font.PLAIN));
+        msgLabel.setForeground(BotanicalTheme.CHARCOAL_TEXT);
+        msgLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        msgLabel.setToolTipText("Click to view ticket #" + ticketId);
+        msgLabel.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 ticketCallback.onTicketAction(ticketId, "view");
             }
         });
-        pill.add(msgLbl, BorderLayout.CENTER);
+        pill.add(msgLabel, BorderLayout.CENTER);
 
+        // Store a client property so container resize can dynamically resize this label
+        pill.putClientProperty("announcementLabel", msgLabel);
+
+        // Bottom: Action Buttons
         JPanel actionButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         actionButtons.setOpaque(false);
 
-        PillButton offerHelpBtn = new PillButton("Offer Help 🙋", BotanicalTheme.SAGE_GREEN, Color.WHITE);
+        PillButton offerHelpBtn = new PillButton("Offer Help", BotanicalTheme.SAGE_GREEN, Color.WHITE);
         offerHelpBtn.setFont(BotanicalTheme.fontSans(11, Font.BOLD));
-        offerHelpBtn.setPreferredSize(new Dimension(110, 26));
+        offerHelpBtn.setPreferredSize(new Dimension(95, 26));
         offerHelpBtn.addActionListener(e -> ticketCallback.onTicketAction(ticketId, "claim"));
         actionButtons.add(offerHelpBtn);
 
-        PillButton viewBtn = new PillButton("View", BotanicalTheme.BLUSH_LIGHT, BotanicalTheme.DEEP_ROSE);
+        PillButton viewBtn = new PillButton("View #" + ticketId, BotanicalTheme.BLUSH_LIGHT, BotanicalTheme.DEEP_ROSE);
         viewBtn.setFont(BotanicalTheme.fontSans(11, Font.BOLD));
-        viewBtn.setPreferredSize(new Dimension(60, 26));
+        viewBtn.setPreferredSize(new Dimension(75, 26));
         viewBtn.addActionListener(e -> ticketCallback.onTicketAction(ticketId, "view"));
         actionButtons.add(viewBtn);
 
-        pill.add(actionButtons, BorderLayout.EAST);
+        pill.add(actionButtons, BorderLayout.SOUTH);
         row.add(pill);
         return row;
     }
@@ -222,46 +248,11 @@ public class ChatBubbleRow {
             setOpaque(false);
             setBorder(new EmptyBorder(8, 14, 6, 14));
 
-            // Check if message references tickets like "#101" or "ticket #101"
-            java.util.regex.Matcher tm = java.util.regex.Pattern.compile("#(\\d+)").matcher(text != null ? text : "");
-            java.util.List<Integer> mentionedTicketIds = new java.util.ArrayList<>();
-            while (tm.find()) {
-                try {
-                    int tid = Integer.parseInt(tm.group(1));
-                    if (!mentionedTicketIds.contains(tid)) {
-                        mentionedTicketIds.add(tid);
-                    }
-                } catch (NumberFormatException ignored) {}
-            }
-
             // 1. Message Text Label with dynamic pixel-accurate word wrap
             textLabel = new WrapLabel(text, maxBubbleWidth);
             textLabel.setFont(BotanicalTheme.FONT_CHAT);
             textLabel.setForeground(isSelf ? BotanicalTheme.DEEP_ROSE : BotanicalTheme.FOREST_DEEP);
-
-            if (!mentionedTicketIds.isEmpty() && ticketCallback != null) {
-                JPanel contentCol = new JPanel();
-                contentCol.setLayout(new BoxLayout(contentCol, BoxLayout.Y_AXIS));
-                contentCol.setOpaque(false);
-                contentCol.add(textLabel);
-
-                // Add clickable pill buttons for each mentioned ticket
-                JPanel pillsRow = new JPanel(new FlowLayout(isSelf ? FlowLayout.RIGHT : FlowLayout.LEFT, 4, 3));
-                pillsRow.setOpaque(false);
-                for (int tid : mentionedTicketIds) {
-                    PillButton ticketPill = new PillButton("Ticket #" + tid + " ↗",
-                            isSelf ? new Color(255, 215, 225) : BotanicalTheme.MINT_SOFT,
-                            isSelf ? BotanicalTheme.DEEP_ROSE : BotanicalTheme.FOREST_DEEP);
-                    ticketPill.setFont(BotanicalTheme.fontSans(10, Font.BOLD));
-                    ticketPill.setPreferredSize(new Dimension(86, 22));
-                    ticketPill.addActionListener(e -> ticketCallback.onTicketAction(tid, "view"));
-                    pillsRow.add(ticketPill);
-                }
-                contentCol.add(pillsRow);
-                add(contentCol, BorderLayout.CENTER);
-            } else {
-                add(textLabel, BorderLayout.CENTER);
-            }
+            add(textLabel, BorderLayout.CENTER);
 
             // 2. Footer: Timestamp + React Action Link + Reactions Pills
             JPanel footer = new JPanel(new BorderLayout(8, 2));
@@ -417,6 +408,31 @@ public class ChatBubbleRow {
                 String[] words = para.split(" ");
                 StringBuilder cur = new StringBuilder();
                 for (String word : words) {
+                    // Check if word itself exceeds targetW; if so, break down the long word
+                    if (fm.stringWidth(word) > targetW) {
+                        if (cur.length() > 0) {
+                            result.add(cur.toString());
+                            cur = new StringBuilder();
+                        }
+                        StringBuilder chunk = new StringBuilder();
+                        for (int i = 0; i < word.length(); i++) {
+                            char ch = word.charAt(i);
+                            if (fm.stringWidth(chunk.toString() + ch) <= targetW) {
+                                chunk.append(ch);
+                            } else {
+                                if (chunk.length() > 0) {
+                                    result.add(chunk.toString());
+                                    chunk = new StringBuilder();
+                                }
+                                chunk.append(ch);
+                            }
+                        }
+                        if (chunk.length() > 0) {
+                            cur = chunk;
+                        }
+                        continue;
+                    }
+
                     String test = cur.length() == 0 ? word : cur + " " + word;
                     if (fm.stringWidth(test) <= targetW) {
                         cur = new StringBuilder(test);

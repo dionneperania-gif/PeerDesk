@@ -25,6 +25,7 @@ com\mycompany\peerdesk\client\PeerDeskGUI.class
 com\mycompany\peerdesk\ui\EditorialCardPanel.class
 com\mycompany\peerdesk\ui\WhimsicalDialog.class
 com\mycompany\peerdesk\client\PeerDeskGUI$2.class
+com\mycompany\peerdesk\ui\ChatBubbleRow$AnnouncementResizeListener.class
 com\mycompany\peerdesk\client\PeerDeskGUI$4.class
 com\mycompany\peerdesk\server\PeerDeskServer.class
 com\mycompany\peerdesk\client\ChangeStatusDialog$StatusOptionCard.class

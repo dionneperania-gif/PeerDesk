@@ -258,7 +258,7 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
         chatScrollPane.getViewport().setBackground(new Color(255, 253, 250));
         chatScrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
-        // Responsive resizing listener for all chat bubbles
+        // Responsive resizing listener for all chat bubbles and announcement cards
         chatScrollPane.getViewport().addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override
             public void componentResized(java.awt.event.ComponentEvent e) {
@@ -268,6 +268,22 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
                 for (ChatBubbleRow.BubblePanel bp : bubblePanels.values()) {
                     bp.setMaxBubbleWidth(maxBubbleWidth);
                 }
+
+                // Also update any announcement card wrap labels to fit the viewport comfortably
+                int cardTextWidth = Math.max(180, vw - 70);
+                for (Component comp : messagesFeed.getComponents()) {
+                    if (comp instanceof JPanel) {
+                        for (Component sub : ((JPanel) comp).getComponents()) {
+                            if (sub instanceof JComponent) {
+                                Object labelObj = ((JComponent) sub).getClientProperty("announcementLabel");
+                                if (labelObj instanceof ChatBubbleRow.WrapLabel) {
+                                    ((ChatBubbleRow.WrapLabel) labelObj).setMaxAvailableWidth(cardTextWidth);
+                                }
+                            }
+                        }
+                    }
+                }
+
                 messagesFeed.revalidate();
                 messagesFeed.repaint();
             }
@@ -820,7 +836,16 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
 
     @Override
     public void onSystemMessage(String timestamp, String message) {
-        JPanel sysRow = ChatBubbleRow.createSystemRow(timestamp, message, (ticketId, action) -> handleTicketActionFromChat(ticketId, action));
+        int viewWidth = chatScrollPane.getViewport().getWidth();
+        if (viewWidth <= 0) viewWidth = chatScrollPane.getWidth();
+        int maxAvailableWidth = Math.max(200, viewWidth - 50);
+
+        JPanel sysRow = ChatBubbleRow.createSystemRow(
+                timestamp,
+                message,
+                (ticketId, action) -> handleTicketActionFromChat(ticketId, action),
+                maxAvailableWidth
+        );
         messagesFeed.add(sysRow);
         scrollToBottom();
     }
