@@ -80,6 +80,7 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
     private JScrollPane chatScrollPane;
     private PillTextField messageField;
     private PillButton sendBtn;
+    private PillButton commandsBtn;
 
     // Online users components
     private DefaultListModel<String> userListModel;
@@ -92,6 +93,8 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
     private JTable ticketTable;
     private PillButton newTicketBtn;
     private PillButton claimTicketBtn;
+    private PillButton changeStatusBtn;
+    private PillButton viewDetailsBtn;
     private PillButton resolveTicketBtn;
     private PillButton deleteTicketBtn;
 
@@ -231,10 +234,10 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
         title.setForeground(BotanicalTheme.CHARCOAL_TEXT);
         chatHeader.add(title, BorderLayout.WEST);
 
-        PillButton helpBtn = new PillButton("Commands", BotanicalTheme.MINT_SOFT, BotanicalTheme.SAGE_DARK);
-        helpBtn.setFont(BotanicalTheme.fontSans(13, Font.BOLD));
-        helpBtn.addActionListener(e -> showCommandsHelp());
-        chatHeader.add(helpBtn, BorderLayout.EAST);
+        commandsBtn = new PillButton("Commands", BotanicalTheme.MINT_SOFT, BotanicalTheme.SAGE_DARK);
+        commandsBtn.setFont(BotanicalTheme.fontSans(13, Font.BOLD));
+        commandsBtn.addActionListener(e -> showCommandsHelp());
+        chatHeader.add(commandsBtn, BorderLayout.EAST);
 
         chatCard.add(chatHeader, BorderLayout.NORTH);
 
@@ -388,15 +391,15 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
         claimTicketBtn.addActionListener(e -> handleClaimTicket());
         actionsBar.add(claimTicketBtn);
 
-        PillButton statusBtn = new PillButton("Change Status", BotanicalTheme.MINT_SOFT, BotanicalTheme.FOREST_DEEP);
-        statusBtn.setFont(BotanicalTheme.fontSans(13, Font.BOLD));
-        statusBtn.addActionListener(e -> handleChangeStatus());
-        actionsBar.add(statusBtn);
+        changeStatusBtn = new PillButton("Change Status", BotanicalTheme.MINT_SOFT, BotanicalTheme.FOREST_DEEP);
+        changeStatusBtn.setFont(BotanicalTheme.fontSans(13, Font.BOLD));
+        changeStatusBtn.addActionListener(e -> handleChangeStatus());
+        actionsBar.add(changeStatusBtn);
 
-        PillButton viewBtn = new PillButton("View Details", BotanicalTheme.PASTEL_LAVENDER, new Color(74, 45, 94));
-        viewBtn.setFont(BotanicalTheme.fontSans(13, Font.BOLD));
-        viewBtn.addActionListener(e -> showSelectedTicketDetails());
-        actionsBar.add(viewBtn);
+        viewDetailsBtn = new PillButton("View Details", BotanicalTheme.PASTEL_LAVENDER, new Color(74, 45, 94));
+        viewDetailsBtn.setFont(BotanicalTheme.fontSans(13, Font.BOLD));
+        viewDetailsBtn.addActionListener(e -> showSelectedTicketDetails());
+        actionsBar.add(viewDetailsBtn);
 
         resolveTicketBtn = new PillButton("Mark Resolved", BotanicalTheme.LIME_ACCENT, BotanicalTheme.FOREST_DEEP);
         resolveTicketBtn.setFont(BotanicalTheme.fontSans(13, Font.BOLD));
@@ -465,7 +468,7 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
         ticketTable.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
+                if (e.getClickCount() == 2 && client.isConnected()) {
                     showSelectedTicketDetails();
                 }
             }
@@ -678,8 +681,11 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
             nickField.setEnabled(false);
             messageField.setEnabled(true);
             sendBtn.setEnabled(true);
+            if (commandsBtn != null) commandsBtn.setEnabled(true);
             newTicketBtn.setEnabled(true);
             claimTicketBtn.setEnabled(true);
+            if (changeStatusBtn != null) changeStatusBtn.setEnabled(true);
+            if (viewDetailsBtn != null) viewDetailsBtn.setEnabled(true);
             resolveTicketBtn.setEnabled(true);
             deleteTicketBtn.setEnabled(true);
         } else {
@@ -696,8 +702,11 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
             nickField.setEnabled(true);
             messageField.setEnabled(false);
             sendBtn.setEnabled(false);
+            if (commandsBtn != null) commandsBtn.setEnabled(false);
             newTicketBtn.setEnabled(false);
             claimTicketBtn.setEnabled(false);
+            if (changeStatusBtn != null) changeStatusBtn.setEnabled(false);
+            if (viewDetailsBtn != null) viewDetailsBtn.setEnabled(false);
             resolveTicketBtn.setEnabled(false);
             deleteTicketBtn.setEnabled(false);
             userListModel.clear();
@@ -856,7 +865,9 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
         getRootPane().getActionMap().put("action_new_ticket", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                openNewTicketDialog();
+                if (client.isConnected()) {
+                    openNewTicketDialog();
+                }
             }
         });
 

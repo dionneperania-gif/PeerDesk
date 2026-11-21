@@ -48,11 +48,12 @@ public class ServerGUI extends JFrame implements ServerEventListener {
         setSize(820, 580);
         setMinimumSize(new Dimension(640, 460));
         setLocationRelativeTo(null);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
+                dispose();
                 if (server != null && server.isRunning()) {
                     new Thread(() -> {
                         if (server != null) {
