@@ -166,12 +166,12 @@ java -cp target/classes com.mycompany.peerdesk.test.SystemVerificationTest
 
 | Date | Partner | Task / Contribution | Status / Commit |
 | :--- | :--- | :--- | :--- |
-| Nov 20, 2026 | Partner 1 | Server socket architecture, `ClientHandler` thread pool, synchronization locks | Completed |
-| Nov 20, 2026 | Partner 2 | Message protocol definition, `Protocol.java`, unique nickname validation logic | Completed |
-| Nov 20, 2026 | Partner 1 | Original Feature 1: Help ticket data model & real-time server ticket sync | Completed |
-| Nov 20, 2026 | Partner 2 | Original Feature 2: Helper claim & resolution workflow state management | Completed |
-| Nov 20, 2026 | Partner 1 | Swing Client GUI implementation with Pastel Pink & Pastel Green visual styling | Completed |
-| Nov 20, 2026 | Partner 2 | Client network reader, thread-safe EDT dispatching (`SwingUtilities.invokeLater`) | Completed |
+| Nov 20, 2026 | Dionne Mariz Perania | Server socket architecture, `ClientHandler` thread pool, synchronization locks | Completed |
+| Nov 20, 2026 | Charl Lee Basisto | Message protocol definition, `Protocol.java`, unique nickname validation logic | Completed |
+| Nov 20, 2026 | Dionne Mariz Perania | Original Feature 1: Help ticket data model & real-time server ticket sync | Completed |
+| Nov 20, 2026 | Charl Lee Basisto | Original Feature 2: Helper claim & resolution workflow state management | Completed |
+| Nov 20, 2026 | Dionne Mariz Perania | Swing Client GUI implementation with Pastel Pink & Pastel Green visual styling | Completed |
+| Nov 20, 2026 | Charl Lee Basisto | Client network reader, thread-safe EDT dispatching (`SwingUtilities.invokeLater`) | Completed |
 | Nov 20, 2026 | Both | 3-client concurrent testing, LAN multi-computer testing, documentation | Verified |
 
 ---
