@@ -517,21 +517,38 @@ public class PeerDeskServer {
         running = false;
         log("Stopping PeerDesk Server...");
 
-        for (ClientHandler client : clients) {
-            client.sendMessage(Protocol.buildPacket(Protocol.RSP_SERVER_ERR, "Server is shutting down."));
-            client.close();
-        }
-        clients.clear();
-
-        if (threadPool != null) {
-            threadPool.shutdownNow();
-        }
-
+        // 1. Immediately close the ServerSocket to unblock acceptLoop
         try {
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
             }
         } catch (IOException ignored) {}
+
+        // 2. Safely notify and close each connected client
+        for (ClientHandler client : clients) {
+            try {
+                client.sendMessage(Protocol.buildPacket(Protocol.RSP_SERVER_ERR, "Server is shutting down."));
+            } catch (Exception ignored) {}
+            client.close();
+        }
+        clients.clear();
+
+        // 3. Gracefully shutdown thread pool
+        if (threadPool != null) {
+            threadPool.shutdown();
+            try {
+                if (!threadPool.awaitTermination(500, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                    threadPool.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                threadPool.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        // 4. Save final state
+        saveTicketsToStorage();
+        saveChatToStorage();
 
         log("PeerDesk Server stopped.");
     }

@@ -9,6 +9,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 /**
@@ -26,6 +27,7 @@ public class ClientHandler implements Runnable {
     private PrintWriter out;
     private String nickname;
     private volatile boolean running = true;
+    private final AtomicBoolean closed = new AtomicBoolean(false);
     private final Object writeLock = new Object();
 
     public ClientHandler(Socket socket, PeerDeskServer server) {
@@ -45,8 +47,9 @@ public class ClientHandler implements Runnable {
      * Thread-safe message transmission to prevent interleaved writes.
      */
     public void sendMessage(String packet) {
+        if (closed.get()) return;
         synchronized (writeLock) {
-            if (out != null) {
+            if (out != null && !socket.isClosed()) {
                 out.println(packet);
                 out.flush();
             }
@@ -264,6 +267,9 @@ public class ClientHandler implements Runnable {
      * Cleans up client socket, streams, and unregisters from server.
      */
     public void close() {
+        if (!closed.compareAndSet(false, true)) {
+            return;
+        }
         running = false;
         try {
             if (in != null) in.close();
@@ -277,8 +283,10 @@ public class ClientHandler implements Runnable {
 
         if (nickname != null) {
             server.unregisterClient(this);
-            server.broadcastSystemMessage(nickname + " left PeerDesk.");
-            server.broadcastUserList();
+            if (server.isRunning()) {
+                server.broadcastSystemMessage(nickname + " left PeerDesk.");
+                server.broadcastUserList();
+            }
         }
     }
 }

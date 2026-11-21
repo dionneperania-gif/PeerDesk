@@ -50,6 +50,20 @@ public class ServerGUI extends JFrame implements ServerEventListener {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                if (server != null && server.isRunning()) {
+                    new Thread(() -> {
+                        if (server != null) {
+                            server.stop();
+                            server = null;
+                        }
+                    }, "Server-Shutdown-On-Close").start();
+                }
+            }
+        });
+
         BotanicalBackgroundPanel root = new BotanicalBackgroundPanel(new BorderLayout(12, 12));
         root.setBorder(new EmptyBorder(14, 16, 14, 16));
 
@@ -183,9 +197,21 @@ public class ServerGUI extends JFrame implements ServerEventListener {
 
     private void handleToggle() {
         if (server != null && server.isRunning()) {
-            server.stop();
-            server = null;
-            updateServerState(false);
+            toggleBtn.setEnabled(false);
+            toggleBtn.setText("Stopping...");
+            new Thread(() -> {
+                try {
+                    if (server != null) {
+                        server.stop();
+                        server = null;
+                    }
+                } finally {
+                    SwingUtilities.invokeLater(() -> {
+                        updateServerState(false);
+                        toggleBtn.setEnabled(true);
+                    });
+                }
+            }, "Server-Stop-Worker").start();
         } else {
             try {
                 int port = Integer.parseInt(portField.getText().trim());
@@ -197,15 +223,26 @@ public class ServerGUI extends JFrame implements ServerEventListener {
     }
 
     private void startServer(int port) {
-        try {
-            server = new PeerDeskServer(port);
-            server.setListener(this);
-            server.start();
-            updateServerState(true);
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Could not start server on port " + port + ": " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            updateServerState(false);
-        }
+        toggleBtn.setEnabled(false);
+        toggleBtn.setText("Starting...");
+        new Thread(() -> {
+            try {
+                PeerDeskServer newServer = new PeerDeskServer(port);
+                newServer.setListener(this);
+                newServer.start();
+                server = newServer;
+                SwingUtilities.invokeLater(() -> {
+                    updateServerState(true);
+                    toggleBtn.setEnabled(true);
+                });
+            } catch (Exception e) {
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(this, "Could not start server on port " + port + ": " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    updateServerState(false);
+                    toggleBtn.setEnabled(true);
+                });
+            }
+        }, "Server-Start-Worker").start();
     }
 
     private void updateServerState(boolean running) {
