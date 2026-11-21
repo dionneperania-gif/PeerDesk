@@ -620,6 +620,22 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
             return;
         }
         int ticketId = (int) ticketTableModel.getValueAt(selectedRow, 0);
+        showTicketDetailsById(ticketId);
+    }
+
+    private void showTicketDetailsById(int ticketId) {
+        // Select and scroll to row in ticket table if present
+        for (int i = 0; i < ticketTableModel.getRowCount(); i++) {
+            if ((int) ticketTableModel.getValueAt(i, 0) == ticketId) {
+                ticketTable.setRowSelectionInterval(i, i);
+                ticketTable.scrollRectToVisible(ticketTable.getCellRect(i, 0, true));
+                if (rightTabs != null) {
+                    rightTabs.setSelectedIndex(0); // Switch to Help Tickets tab
+                }
+                break;
+            }
+        }
+
         Ticket targetTicket = null;
         for (Ticket t : currentTickets) {
             if (t.getId() == ticketId) {
@@ -628,10 +644,25 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
             }
         }
         if (targetTicket == null) {
-            WhimsicalDialog.showNotice(this, "Not Found", "Ticket details could not be found.");
+            WhimsicalDialog.showNotice(this, "Not Found", "Ticket #" + ticketId + " could not be found.");
             return;
         }
         new TicketDetailsDialog(this, targetTicket, client).setVisible(true);
+    }
+
+    private void handleTicketActionFromChat(int ticketId, String action) {
+        if ("claim".equalsIgnoreCase(action)) {
+            // Select row in table and invoke claim
+            for (int i = 0; i < ticketTableModel.getRowCount(); i++) {
+                if ((int) ticketTableModel.getValueAt(i, 0) == ticketId) {
+                    ticketTable.setRowSelectionInterval(i, i);
+                    break;
+                }
+            }
+            client.claimTicket(ticketId);
+        } else {
+            showTicketDetailsById(ticketId);
+        }
     }
 
     private void handleResolveTicket() {
@@ -770,7 +801,8 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
 
         ChatBubbleRow.MessageRowResult result = ChatBubbleRow.createMessageRow(
                 messageId, sender, timestamp, message, isSelf, maxBubbleWidth,
-                (msgId, reactionType) -> client.sendReaction(msgId, reactionType)
+                (msgId, reactionType) -> client.sendReaction(msgId, reactionType),
+                (ticketId, action) -> handleTicketActionFromChat(ticketId, action)
         );
         bubblePanels.put(messageId, result.bubblePanel);
         messagesFeed.add(result.rowPanel);
@@ -788,7 +820,7 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
 
     @Override
     public void onSystemMessage(String timestamp, String message) {
-        JPanel sysRow = ChatBubbleRow.createSystemRow(timestamp, message);
+        JPanel sysRow = ChatBubbleRow.createSystemRow(timestamp, message, (ticketId, action) -> handleTicketActionFromChat(ticketId, action));
         messagesFeed.add(sysRow);
         scrollToBottom();
     }

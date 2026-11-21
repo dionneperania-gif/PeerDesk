@@ -36,6 +36,11 @@ public class ChatBubbleRow {
         void onReact(int messageId, String reactionType);
     }
 
+    @FunctionalInterface
+    public interface TicketActionCallback {
+        void onTicketAction(int ticketId, String action); // action: "view" or "claim"
+    }
+
     private ChatBubbleRow() {}
 
     /**
@@ -48,7 +53,8 @@ public class ChatBubbleRow {
             String text,
             boolean isSelf,
             int maxBubbleWidth,
-            ReactionCallback reactionCallback
+            ReactionCallback reactionCallback,
+            TicketActionCallback ticketCallback
     ) {
         JPanel row = new JPanel(new FlowLayout(isSelf ? FlowLayout.RIGHT : FlowLayout.LEFT, 8, 3));
         row.setOpaque(false);
@@ -68,12 +74,24 @@ public class ChatBubbleRow {
         }
 
         // Compact Bubble Component
-        BubblePanel bubble = new BubblePanel(messageId, text, timestamp, isSelf, maxBubbleWidth, reactionCallback);
+        BubblePanel bubble = new BubblePanel(messageId, text, timestamp, isSelf, maxBubbleWidth, reactionCallback, ticketCallback);
         bubble.setAlignmentX(isSelf ? Component.RIGHT_ALIGNMENT : Component.LEFT_ALIGNMENT);
         col.add(bubble);
 
         row.add(col);
         return new MessageRowResult(row, bubble);
+    }
+
+    public static MessageRowResult createMessageRow(
+            int messageId,
+            String sender,
+            String timestamp,
+            String text,
+            boolean isSelf,
+            int maxBubbleWidth,
+            ReactionCallback reactionCallback
+    ) {
+        return createMessageRow(messageId, sender, timestamp, text, isSelf, maxBubbleWidth, reactionCallback, null);
     }
 
     public static class MessageRowResult {
@@ -87,9 +105,20 @@ public class ChatBubbleRow {
     }
 
     /**
-     * Creates a subtle centered system notice row.
+     * Creates a subtle centered system notice row, or a special announcement pill if it mentions a ticket.
      */
     public static JPanel createSystemRow(String timestamp, String message) {
+        return createSystemRow(timestamp, message, null);
+    }
+
+    public static JPanel createSystemRow(String timestamp, String message, TicketActionCallback ticketCallback) {
+        // Detect if this system message is announcing a ticket: e.g. "Alice submitted ticket #101: [Java] ..."
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("ticket #(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(message);
+        if (m.find() && ticketCallback != null) {
+            int ticketId = Integer.parseInt(m.group(1));
+            return createTicketAnnouncementRow(timestamp, message, ticketId, ticketCallback);
+        }
+
         JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 4));
         row.setOpaque(false);
 
@@ -99,6 +128,52 @@ public class ChatBubbleRow {
         label.setBorder(new EmptyBorder(2, 10, 2, 10));
 
         row.add(label);
+        return row;
+    }
+
+    private static JPanel createTicketAnnouncementRow(String timestamp, String message, int ticketId, TicketActionCallback ticketCallback) {
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 5));
+        row.setOpaque(false);
+
+        EditorialCardPanel pill = new EditorialCardPanel(new BorderLayout(8, 0), 16);
+        pill.setFillColor(new Color(255, 243, 246));
+        pill.setBorderColor(BotanicalTheme.BORDER_ROSE);
+        pill.setBorder(new EmptyBorder(6, 12, 6, 12));
+
+        JLabel iconLbl = new JLabel("📢");
+        iconLbl.setFont(BotanicalTheme.fontSans(12, Font.PLAIN));
+        pill.add(iconLbl, BorderLayout.WEST);
+
+        JLabel msgLbl = new JLabel(message + "  (" + timestamp + ")");
+        msgLbl.setFont(BotanicalTheme.fontSans(12, Font.BOLD));
+        msgLbl.setForeground(BotanicalTheme.FOREST_DEEP);
+        msgLbl.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        msgLbl.setToolTipText("Click to view ticket #" + ticketId);
+        msgLbl.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                ticketCallback.onTicketAction(ticketId, "view");
+            }
+        });
+        pill.add(msgLbl, BorderLayout.CENTER);
+
+        JPanel actionButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        actionButtons.setOpaque(false);
+
+        PillButton offerHelpBtn = new PillButton("Offer Help 🙋", BotanicalTheme.SAGE_GREEN, Color.WHITE);
+        offerHelpBtn.setFont(BotanicalTheme.fontSans(11, Font.BOLD));
+        offerHelpBtn.setPreferredSize(new Dimension(110, 26));
+        offerHelpBtn.addActionListener(e -> ticketCallback.onTicketAction(ticketId, "claim"));
+        actionButtons.add(offerHelpBtn);
+
+        PillButton viewBtn = new PillButton("View", BotanicalTheme.BLUSH_LIGHT, BotanicalTheme.DEEP_ROSE);
+        viewBtn.setFont(BotanicalTheme.fontSans(11, Font.BOLD));
+        viewBtn.setPreferredSize(new Dimension(60, 26));
+        viewBtn.addActionListener(e -> ticketCallback.onTicketAction(ticketId, "view"));
+        actionButtons.add(viewBtn);
+
+        pill.add(actionButtons, BorderLayout.EAST);
+        row.add(pill);
         return row;
     }
 
@@ -125,6 +200,18 @@ public class ChatBubbleRow {
                 int maxBubbleWidth,
                 ReactionCallback reactionCallback
         ) {
+            this(messageId, text, timestamp, isSelf, maxBubbleWidth, reactionCallback, null);
+        }
+
+        public BubblePanel(
+                int messageId,
+                String text,
+                String timestamp,
+                boolean isSelf,
+                int maxBubbleWidth,
+                ReactionCallback reactionCallback,
+                TicketActionCallback ticketCallback
+        ) {
             super(new BorderLayout(0, 4));
             this.messageId = messageId;
             this.isSelf = isSelf;
@@ -135,11 +222,46 @@ public class ChatBubbleRow {
             setOpaque(false);
             setBorder(new EmptyBorder(8, 14, 6, 14));
 
+            // Check if message references tickets like "#101" or "ticket #101"
+            java.util.regex.Matcher tm = java.util.regex.Pattern.compile("#(\\d+)").matcher(text != null ? text : "");
+            java.util.List<Integer> mentionedTicketIds = new java.util.ArrayList<>();
+            while (tm.find()) {
+                try {
+                    int tid = Integer.parseInt(tm.group(1));
+                    if (!mentionedTicketIds.contains(tid)) {
+                        mentionedTicketIds.add(tid);
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+
             // 1. Message Text Label with dynamic pixel-accurate word wrap
             textLabel = new WrapLabel(text, maxBubbleWidth);
             textLabel.setFont(BotanicalTheme.FONT_CHAT);
             textLabel.setForeground(isSelf ? BotanicalTheme.DEEP_ROSE : BotanicalTheme.FOREST_DEEP);
-            add(textLabel, BorderLayout.CENTER);
+
+            if (!mentionedTicketIds.isEmpty() && ticketCallback != null) {
+                JPanel contentCol = new JPanel();
+                contentCol.setLayout(new BoxLayout(contentCol, BoxLayout.Y_AXIS));
+                contentCol.setOpaque(false);
+                contentCol.add(textLabel);
+
+                // Add clickable pill buttons for each mentioned ticket
+                JPanel pillsRow = new JPanel(new FlowLayout(isSelf ? FlowLayout.RIGHT : FlowLayout.LEFT, 4, 3));
+                pillsRow.setOpaque(false);
+                for (int tid : mentionedTicketIds) {
+                    PillButton ticketPill = new PillButton("Ticket #" + tid + " ↗",
+                            isSelf ? new Color(255, 215, 225) : BotanicalTheme.MINT_SOFT,
+                            isSelf ? BotanicalTheme.DEEP_ROSE : BotanicalTheme.FOREST_DEEP);
+                    ticketPill.setFont(BotanicalTheme.fontSans(10, Font.BOLD));
+                    ticketPill.setPreferredSize(new Dimension(86, 22));
+                    ticketPill.addActionListener(e -> ticketCallback.onTicketAction(tid, "view"));
+                    pillsRow.add(ticketPill);
+                }
+                contentCol.add(pillsRow);
+                add(contentCol, BorderLayout.CENTER);
+            } else {
+                add(textLabel, BorderLayout.CENTER);
+            }
 
             // 2. Footer: Timestamp + React Action Link + Reactions Pills
             JPanel footer = new JPanel(new BorderLayout(8, 2));
