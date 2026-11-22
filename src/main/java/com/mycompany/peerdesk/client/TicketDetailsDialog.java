@@ -95,9 +95,7 @@ public class TicketDetailsDialog extends JDialog {
         gbc.gridx = 0; gbc.gridy = 0;
         infoPanel.add(createMiniLabel("REQUESTER:"), gbc);
         gbc.gridx = 1;
-        String reqText = (ticket.getPeerId() != null && !ticket.getPeerId().equalsIgnoreCase(ticket.getRequester()))
-                ? ticket.getRequester() + " (" + ticket.getPeerId() + ")"
-                : ticket.getRequester();
+        String reqText = ticket.getRequester();
         reqVal = new JLabel(reqText);
         reqVal.setFont(BotanicalTheme.fontSans(13, Font.BOLD));
         reqVal.setForeground(BotanicalTheme.CHARCOAL_TEXT);

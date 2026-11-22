@@ -519,10 +519,7 @@ public class PeerDeskServer {
         tickets.add(ticket);
         saveTicketsToStorage();
         broadcastTicketList();
-        String announcementRequester = (peerId != null && !peerId.equalsIgnoreCase(requester))
-                ? requester + " (" + peerId + ")"
-                : requester;
-        broadcastSystemMessage(announcementRequester + " submitted ticket #" + id + ": [" + category + "] " + subject);
+        broadcastSystemMessage(requester + " submitted ticket #" + id + ": [" + category + "] " + subject);
     }
 
     public void editTicket(int ticketId, String newCategory, String newSubject, String newRequester, String editorNick) {

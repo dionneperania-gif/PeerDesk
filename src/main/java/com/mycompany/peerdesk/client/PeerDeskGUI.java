@@ -1008,15 +1008,12 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
 
         ticketTableModel.setRowCount(0);
         for (Ticket t : tickets) {
-            String requesterDisplay = (t.getPeerId() != null && !t.getPeerId().equalsIgnoreCase(t.getRequester()))
-                    ? t.getRequester() + " (" + t.getPeerId() + ")"
-                    : t.getRequester();
             ticketTableModel.addRow(new Object[]{
                     t.getId(),
                     t.getStatus().name(),
                     t.getCategory(),
                     t.getSubject(),
-                    requesterDisplay,
+                    t.getRequester(),
                     t.getHelper()
             });
         }
