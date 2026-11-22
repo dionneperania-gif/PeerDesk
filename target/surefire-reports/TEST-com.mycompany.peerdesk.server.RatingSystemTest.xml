@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.mycompany.peerdesk.server.RatingSystemTest" time="0.299" tests="9" errors="0" skipped="0" failures="0">
+  <properties>
+    <property name="java.specification.version" value="26"/>
+    <property name="sun.cpu.isalist" value="amd64"/>
+    <property name="sun.jnu.encoding" value="Cp1252"/>
+    <property name="java.class.path" value="C:\Users\DELL\Documents\NetBeansProjects\PeerDesk\target\test-classes;C:\Users\DELL\Documents\NetBeansProjects\PeerDesk\target\classes;C:\Users\DELL\.m2\repository\org\junit\jupiter\junit-jupiter\5.10.0\junit-jupiter-5.10.0.jar;C:\Users\DELL\.m2\repository\org\junit\jupiter\junit-jupiter-api\5.10.0\junit-jupiter-api-5.10.0.jar;C:\Users\DELL\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\DELL\.m2\repository\org\junit\platform\junit-platform-commons\1.10.0\junit-platform-commons-1.10.0.jar;C:\Users\DELL\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\DELL\.m2\repository\org\junit\jupiter\junit-jupiter-params\5.10.0\junit-jupiter-params-5.10.0.jar;C:\Users\DELL\.m2\repository\org\junit\jupiter\junit-jupiter-engine\5.10.0\junit-jupiter-engine-5.10.0.jar;C:\Users\DELL\.m2\repository\org\junit\platform\junit-platform-engine\1.10.0\junit-platform-engine-1.10.0.jar;"/>
+    <property name="java.vm.vendor" value="Oracle Corporation"/>
+    <property name="sun.arch.data.model" value="64"/>
+    <property name="user.variant" value=""/>
+    <property name="java.vendor.url" value="https://java.oracle.com/"/>
+    <property name="user.timezone" value="Asia/Singapore"/>
+    <property name="user.country.format" value="PG"/>
+    <property name="os.name" value="Windows 11"/>
+    <property name="java.vm.specification.version" value="26"/>
+    <property name="sun.java.launcher" value="SUN_STANDARD"/>
+    <property name="user.country" value="US"/>
+    <property name="sun.boot.library.path" value="C:\Program Files\Java\jdk-26\bin"/>
+    <property name="sun.java.command" value="C:\Users\DELL\AppData\Local\Temp\surefire13599735261260632140\surefirebooter-20261122234127350_3.jar C:\Users\DELL\AppData\Local\Temp\surefire13599735261260632140 2026-11-22T23-41-26_756-jvmRun1 surefire-20261122234127350_1tmp surefire_0-20261122234127350_2tmp"/>
+    <property name="jdk.debug" value="release"/>
+    <property name="surefire.test.class.path" value="C:\Users\DELL\Documents\NetBeansProjects\PeerDesk\target\test-classes;C:\Users\DELL\Documents\NetBeansProjects\PeerDesk\target\classes;C:\Users\DELL\.m2\repository\org\junit\jupiter\junit-jupiter\5.10.0\junit-jupiter-5.10.0.jar;C:\Users\DELL\.m2\repository\org\junit\jupiter\junit-jupiter-api\5.10.0\junit-jupiter-api-5.10.0.jar;C:\Users\DELL\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\DELL\.m2\repository\org\junit\platform\junit-platform-commons\1.10.0\junit-platform-commons-1.10.0.jar;C:\Users\DELL\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\DELL\.m2\repository\org\junit\jupiter\junit-jupiter-params\5.10.0\junit-jupiter-params-5.10.0.jar;C:\Users\DELL\.m2\repository\org\junit\jupiter\junit-jupiter-engine\5.10.0\junit-jupiter-engine-5.10.0.jar;C:\Users\DELL\.m2\repository\org\junit\platform\junit-platform-engine\1.10.0\junit-platform-engine-1.10.0.jar;"/>
+    <property name="sun.cpu.endian" value="little"/>
+    <property name="user.home" value="C:\Users\DELL"/>
+    <property name="user.language" value="en"/>
+    <property name="java.specification.vendor" value="Oracle Corporation"/>
+    <property name="java.version.date" value="2026-03-17"/>
+    <property name="java.home" value="C:\Program Files\Java\jdk-26"/>
+    <property name="file.separator" value="\"/>
+    <property name="basedir" value="C:\Users\DELL\Documents\NetBeansProjects\PeerDesk"/>
+    <property name="java.vm.compressedOopsMode" value="32-bit"/>
+    <property name="line.separator" value="&#10;"/>
+    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
+    <property name="java.specification.name" value="Java Platform API Specification"/>
+    <property name="surefire.real.class.path" value="C:\Users\DELL\AppData\Local\Temp\surefire13599735261260632140\surefirebooter-20261122234127350_3.jar"/>
+    <property name="user.script" value=""/>
+    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
+    <property name="java.runtime.version" value="26+35-2893"/>
+    <property name="user.name" value="DELL"/>
+    <property name="stdout.encoding" value="Cp1252"/>
+    <property name="path.separator" value=";"/>
+    <property name="os.version" value="10.0"/>
+    <property name="java.runtime.name" value="Java(TM) SE Runtime Environment"/>
+    <property name="file.encoding" value="UTF-8"/>
+    <property name="java.vm.name" value="Java HotSpot(TM) 64-Bit Server VM"/>
+    <property name="localRepository" value="C:\Users\DELL\.m2\repository"/>
+    <property name="java.vendor.url.bug" value="https://bugreport.java.com/bugreport/"/>
+    <property name="java.io.tmpdir" value="C:\Users\DELL\AppData\Local\Temp\"/>
+    <property name="java.version" value="26"/>
+    <property name="user.dir" value="C:\Users\DELL\Documents\NetBeansProjects\PeerDesk"/>
+    <property name="os.arch" value="amd64"/>
+    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
+    <property name="sun.os.patch.level" value=""/>
+    <property name="native.encoding" value="Cp1252"/>
+    <property name="java.library.path" value="C:\Program Files\Java\jdk-26\bin;C:\Windows\Sun\Java\bin;C:\Windows\system32;C:\Windows;C:/Users/DELL/.gemini/antigravity/bin;C:\Users\DELL\AppData\Roaming\Antigravity\bin;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Users\DELL\AppData\Local\Microsoft\WindowsApps;C:\ProgramData\DELL\GitHubDesktop\bin;C:\Users\DELL\AppData\Local\GitHubDesktop\bin;."/>
+    <property name="java.vm.info" value="mixed mode, sharing"/>
+    <property name="stderr.encoding" value="Cp1252"/>
+    <property name="java.vendor" value="Oracle Corporation"/>
+    <property name="java.vm.version" value="26+35-2893"/>
+    <property name="stdin.encoding" value="Cp1252"/>
+    <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
+    <property name="java.class.version" value="70.0"/>
+  </properties>
+  <testcase name="testMultipleHelpersRatingCreditedToAll" classname="com.mycompany.peerdesk.server.RatingSystemTest" time="0.116">
+    <system-out><![CDATA[[23:41:33] [SERVER] System: Myka submitted ticket #100: [Math] Calculus
+[23:41:33] [SERVER] System: Dion is now assisting with ticket #100 (Myka)
+[23:41:33] [SERVER] System: Angela is now assisting with ticket #100 (Myka)
+[23:41:33] [SERVER] System: Ticket #100 has been marked RESOLVED by Myka
+[23:41:33] [SERVER] Rating submitted for ticket #100 (5 stars) to [Dion, Angela] by Myka
+[23:41:33] [SERVER] System: Myka rated Dion and Angela 5 stars for ticket #100.
+[23:41:33] [SERVER] System: Chloe submitted ticket #101: [Java] OOP
+[23:41:33] [SERVER] System: Dion is now assisting with ticket #101 (Chloe)
+[23:41:33] [SERVER] System: Ticket #101 has been marked RESOLVED by Chloe
+[23:41:33] [SERVER] Rating submitted for ticket #101 (3 stars) to [Dion] by Chloe
+[23:41:33] [SERVER] System: Chloe rated Dion 3 stars for ticket #101.
+]]></system-out>
+    <system-err><![CDATA[Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Myka submitted ticket #100: [Math] Calculus
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Dion is now assisting with ticket #100 (Myka)
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Angela is now assisting with ticket #100 (Myka)
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Ticket #100 has been marked RESOLVED by Myka
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: Rating submitted for ticket #100 (5 stars) to [Dion, Angela] by Myka
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Myka rated Dion and Angela 5 stars for ticket #100.
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Chloe submitted ticket #101: [Java] OOP
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Dion is now assisting with ticket #101 (Chloe)
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Ticket #101 has been marked RESOLVED by Chloe
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: Rating submitted for ticket #101 (3 stars) to [Dion] by Chloe
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Chloe rated Dion 3 stars for ticket #101.
+]]></system-err>
+  </testcase>
+  <testcase name="testHelperCannotRateThemselves" classname="com.mycompany.peerdesk.server.RatingSystemTest" time="0.018">
+    <system-out><![CDATA[[23:41:33] [SERVER] System: Alice submitted ticket #100: [Java] Bug
+[23:41:33] [SERVER] System: Alice is now assisting with ticket #100 (Alice)
+[23:41:33] [SERVER] System: Ticket #100 has been marked RESOLVED by Alice
+]]></system-out>
+    <system-err><![CDATA[Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Alice submitted ticket #100: [Java] Bug
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Alice is now assisting with ticket #100 (Alice)
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Ticket #100 has been marked RESOLVED by Alice
+]]></system-err>
+  </testcase>
+  <testcase name="testRatingUnresolvedTicket" classname="com.mycompany.peerdesk.server.RatingSystemTest" time="0.011">
+    <system-out><![CDATA[[23:41:33] [SERVER] System: Alice submitted ticket #100: [Java] Bug
+]]></system-out>
+    <system-err><![CDATA[Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Alice submitted ticket #100: [Java] Bug
+]]></system-err>
+  </testcase>
+  <testcase name="testPreventDuplicateRatingOnSameTicket" classname="com.mycompany.peerdesk.server.RatingSystemTest" time="0.024">
+    <system-out><![CDATA[[23:41:33] [SERVER] System: Alice submitted ticket #100: [Java] Bug
+[23:41:33] [SERVER] System: Bob is now assisting with ticket #100 (Alice)
+[23:41:33] [SERVER] System: Ticket #100 has been marked RESOLVED by Alice
+[23:41:33] [SERVER] Rating submitted for ticket #100 (5 stars) to [Bob] by Alice
+[23:41:33] [SERVER] System: Alice rated Bob 5 stars for ticket #100.
+]]></system-out>
+    <system-err><![CDATA[Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Alice submitted ticket #100: [Java] Bug
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Bob is now assisting with ticket #100 (Alice)
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Ticket #100 has been marked RESOLVED by Alice
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: Rating submitted for ticket #100 (5 stars) to [Bob] by Alice
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Alice rated Bob 5 stars for ticket #100.
+]]></system-err>
+  </testcase>
+  <testcase name="testRatingTicketWithoutHelper" classname="com.mycompany.peerdesk.server.RatingSystemTest" time="0.012">
+    <system-out><![CDATA[[23:41:33] [SERVER] System: Alice submitted ticket #100: [Java] Bug
+[23:41:33] [SERVER] System: Ticket #100 has been marked RESOLVED by Alice
+]]></system-out>
+    <system-err><![CDATA[Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Alice submitted ticket #100: [Java] Bug
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Ticket #100 has been marked RESOLVED by Alice
+]]></system-err>
+  </testcase>
+  <testcase name="testHelperCannotResolveTicketOnBehalfOfRequester" classname="com.mycompany.peerdesk.server.RatingSystemTest" time="0.027">
+    <system-out><![CDATA[[23:41:33] [SERVER] System: Alice (2025-1111) submitted ticket #100: [Java] Bug
+[23:41:33] [SERVER] System: Bob is now assisting with ticket #100 (Alice (2025-1111))
+[23:41:33] [SERVER] Warning: Bob attempted to resolve ticket #100 without permission.
+[23:41:33] [SERVER] System: Ticket #100 has been marked RESOLVED by Alice
+]]></system-out>
+    <system-err><![CDATA[Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Alice (2025-1111) submitted ticket #100: [Java] Bug
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Bob is now assisting with ticket #100 (Alice (2025-1111))
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: Warning: Bob attempted to resolve ticket #100 without permission.
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Ticket #100 has been marked RESOLVED by Alice
+]]></system-err>
+  </testcase>
+  <testcase name="testSuccessfulSingleHelperRating" classname="com.mycompany.peerdesk.server.RatingSystemTest" time="0.007">
+    <system-out><![CDATA[[23:41:33] [SERVER] System: Alice submitted ticket #100: [Java] Bug
+[23:41:33] [SERVER] System: Bob is now assisting with ticket #100 (Alice)
+[23:41:33] [SERVER] System: Ticket #100 has been marked RESOLVED by Alice
+[23:41:33] [SERVER] Rating submitted for ticket #100 (5 stars) to [Bob] by Alice
+[23:41:33] [SERVER] System: Alice rated Bob 5 stars for ticket #100.
+]]></system-out>
+    <system-err><![CDATA[Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Alice submitted ticket #100: [Java] Bug
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Bob is now assisting with ticket #100 (Alice)
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Ticket #100 has been marked RESOLVED by Alice
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: Rating submitted for ticket #100 (5 stars) to [Bob] by Alice
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Alice rated Bob 5 stars for ticket #100.
+]]></system-err>
+  </testcase>
+  <testcase name="testRatingNonExistentTicket" classname="com.mycompany.peerdesk.server.RatingSystemTest" time="0.005"/>
+  <testcase name="testNonRequesterCannotRate" classname="com.mycompany.peerdesk.server.RatingSystemTest" time="0.017">
+    <system-out><![CDATA[[23:41:33] [SERVER] System: Alice submitted ticket #100: [Java] Bug
+[23:41:33] [SERVER] System: Bob is now assisting with ticket #100 (Alice)
+[23:41:33] [SERVER] System: Ticket #100 has been marked RESOLVED by Alice
+]]></system-out>
+    <system-err><![CDATA[Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Alice submitted ticket #100: [Java] Bug
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Bob is now assisting with ticket #100 (Alice)
+Nov 22, 2026 11:41:33 PM com.mycompany.peerdesk.server.PeerDeskServer log
+INFO: System: Ticket #100 has been marked RESOLVED by Alice
+]]></system-err>
+  </testcase>
+</testsuite>

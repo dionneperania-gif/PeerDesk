@@ -253,6 +253,35 @@ public class PeerDeskClient {
                 });
                 break;
 
+            case Protocol.RSP_RATINGS_DATA:
+                if (parts.length >= 4) {
+                    String classmate = parts[1];
+                    double avg = 0.0;
+                    int count = 0;
+                    try {
+                        avg = Double.parseDouble(parts[2]);
+                        count = Integer.parseInt(parts[3]);
+                    } catch (NumberFormatException ignored) {}
+                    String details = parts.length >= 5 ? parts[4] : "";
+                    final double finalAvg = avg;
+                    final int finalCount = count;
+                    dispatch(() -> {
+                        if (listener != null) listener.onRatingsDataReceived(classmate, finalAvg, finalCount, details);
+                    });
+                }
+                break;
+
+            case Protocol.RSP_RATING_OK:
+                if (parts.length >= 2) {
+                    try {
+                        int ticketId = Integer.parseInt(parts[1]);
+                        dispatch(() -> {
+                            if (listener != null) listener.onRatingSubmitted(ticketId);
+                        });
+                    } catch (NumberFormatException ignored) {}
+                }
+                break;
+
             case Protocol.RSP_SERVER_ERR:
                 String srvErr = parts.length > 1 ? parts[1] : "Unknown server error.";
                 dispatch(() -> {
@@ -378,6 +407,16 @@ public class PeerDeskClient {
     public void sendReaction(int messageId, String reactionType) {
         if (!connected) return;
         sendRaw(Protocol.buildPacket(Protocol.CMD_REACT, String.valueOf(messageId), reactionType));
+    }
+
+    public void submitRating(int ticketId, int stars) {
+        if (!connected) return;
+        sendRaw(Protocol.buildPacket(Protocol.CMD_SUBMIT_RATING, String.valueOf(ticketId), String.valueOf(stars)));
+    }
+
+    public void requestRatings(String classmateNick) {
+        if (!connected) return;
+        sendRaw(Protocol.buildPacket(Protocol.CMD_GET_RATINGS, classmateNick));
     }
 
     /**

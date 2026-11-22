@@ -66,6 +66,7 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
     private final PeerDeskClient client;
     private final List<Ticket> currentTickets = new ArrayList<>();
     private final java.util.Map<Integer, ChatBubbleRow.BubblePanel> bubblePanels = new java.util.HashMap<>();
+    private final java.util.Set<Integer> ratedTickets = new java.util.HashSet<>();
 
     // Connection components
     private PillTextField hostField;
@@ -413,7 +414,7 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
         rightTabs.setForeground(BotanicalTheme.CHARCOAL_TEXT);
 
         rightTabs.addTab("Help Tickets", buildTicketDeskPanel());
-        rightTabs.addTab("Active (0)", buildUserListPanel());
+        rightTabs.addTab("Active Classmates (0)", buildUserListPanel());
 
         card.add(rightTabs, BorderLayout.CENTER);
         return card;
@@ -540,7 +541,7 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
         panel.setOpaque(false);
         panel.setBorder(new EmptyBorder(8, 4, 4, 4));
 
-        peersCountLabel = new JLabel("Active (0)");
+        peersCountLabel = new JLabel("Active Classmates (0)");
         peersCountLabel.setFont(BotanicalTheme.FONT_TITLE_SECTION);
         peersCountLabel.setForeground(BotanicalTheme.DEEP_ROSE);
         panel.add(peersCountLabel, BorderLayout.NORTH);
@@ -623,6 +624,19 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
             rowPanel.add(nameLbl, BorderLayout.WEST);
             rowPanel.add(badgeLbl, BorderLayout.EAST);
             return rowPanel;
+        });
+
+        // Double-click a classmate to view their ratings profile
+        userList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2 && client.isConnected()) {
+                    String selected = userList.getSelectedValue();
+                    if (selected != null && !selected.trim().isEmpty()) {
+                        client.requestRatings(selected.trim());
+                    }
+                }
+            }
         });
 
         JScrollPane scroll = new JScrollPane(userList);
@@ -802,7 +816,52 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
             return;
         }
         int ticketId = (int) ticketTableModel.getValueAt(selectedRow, 0);
-        client.resolveTicket(ticketId);
+
+        Ticket targetTicket = null;
+        for (Ticket t : currentTickets) {
+            if (t.getId() == ticketId) {
+                targetTicket = t;
+                break;
+            }
+        }
+
+        if (targetTicket != null) {
+            String myNick = client.getCurrentNickname();
+            String mySid = client.getCurrentStudentId();
+            boolean isRequester = (mySid != null && mySid.equalsIgnoreCase(targetTicket.getPeerId()))
+                    || (myNick != null && myNick.equalsIgnoreCase(targetTicket.getRequester()))
+                    || (myNick != null && myNick.equalsIgnoreCase(targetTicket.getPeerId()))
+                    || (targetTicket.getRequester() != null && mySid != null && targetTicket.getRequester().contains("(" + mySid + ")"));
+
+            if (!isRequester) {
+                WhimsicalDialog.showNotice(this, "Permission Denied", "Only the original requester can mark this ticket as RESOLVED.");
+                return;
+            }
+
+            // Mark resolved on the server
+            client.resolveTicket(ticketId);
+
+            // Check if there are helpers to rate and not already rated
+            if (!ratedTickets.contains(ticketId)) {
+                String helpers = targetTicket.getHelper();
+                boolean hasHelper = helpers != null && !helpers.trim().isEmpty() && !"None".equalsIgnoreCase(helpers.trim());
+
+                // Check that the requester is not also the sole helper (cannot rate themselves)
+                boolean isSelfHelper = false;
+                if (hasHelper && myNick != null) {
+                    String[] parts = helpers.split(",");
+                    if (parts.length == 1 && (parts[0].trim().equalsIgnoreCase(myNick) || (mySid != null && parts[0].trim().equalsIgnoreCase(mySid)))) {
+                        isSelfHelper = true;
+                    }
+                }
+
+                if (hasHelper && !isSelfHelper) {
+                    new ThankYouRatingDialog(this, client, targetTicket).setVisible(true);
+                }
+            }
+        } else {
+            client.resolveTicket(ticketId);
+        }
     }
 
     private void handleDeleteTicket() {
@@ -812,6 +871,30 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
             return;
         }
         int ticketId = (int) ticketTableModel.getValueAt(selectedRow, 0);
+
+        // Find the ticket in the local list to check ownership
+        Ticket targetTicket = null;
+        for (Ticket t : currentTickets) {
+            if (t.getId() == ticketId) {
+                targetTicket = t;
+                break;
+            }
+        }
+
+        if (targetTicket != null) {
+            String myNick = client.getCurrentNickname();
+            String mySid = client.getCurrentStudentId();
+            boolean isRequester = (mySid != null && mySid.equalsIgnoreCase(targetTicket.getPeerId()))
+                    || (myNick != null && myNick.equalsIgnoreCase(targetTicket.getRequester()))
+                    || (myNick != null && myNick.equalsIgnoreCase(targetTicket.getPeerId()))
+                    || (targetTicket.getRequester() != null && mySid != null && targetTicket.getRequester().contains("(" + mySid + ")"));
+
+            if (!isRequester) {
+                WhimsicalDialog.showNotice(this, "Permission Denied", "Only the original requester can remove this ticket.");
+                return;
+            }
+        }
+
         boolean confirm = WhimsicalDialog.showConfirm(this, "Remove Ticket", "Are you sure you want to remove ticket #" + ticketId + "?", "Remove");
         if (confirm) {
             client.deleteTicket(ticketId);
@@ -873,9 +956,9 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
             resolveTicketBtn.setEnabled(false);
             deleteTicketBtn.setEnabled(false);
             userListModel.clear();
-            peersCountLabel.setText("Active (0)");
+            peersCountLabel.setText("Active Classmates (0)");
             if (rightTabs != null && rightTabs.getTabCount() > 1) {
-                rightTabs.setTitleAt(1, "Active (0)");
+                rightTabs.setTitleAt(1, "Active Classmates (0)");
             }
             currentTickets.clear();
             ticketTableModel.setRowCount(0);
@@ -982,9 +1065,9 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
         for (String user : users) {
             userListModel.addElement(user);
         }
-        peersCountLabel.setText("Active (" + users.size() + ")");
+        peersCountLabel.setText("Active Classmates (" + users.size() + ")");
         if (rightTabs != null && rightTabs.getTabCount() > 1) {
-            rightTabs.setTitleAt(1, "Active (" + users.size() + ")");
+            rightTabs.setTitleAt(1, "Active Classmates (" + users.size() + ")");
         }
         userList.repaint();
     }
@@ -1017,6 +1100,16 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
                     t.getHelper()
             });
         }
+    }
+
+    @Override
+    public void onRatingsDataReceived(String classmateNick, double avgRating, int totalCount, String details) {
+        new ClassmateRatingsDialog(this, classmateNick, avgRating, totalCount, details).setVisible(true);
+    }
+
+    @Override
+    public void onRatingSubmitted(int ticketId) {
+        ratedTickets.add(ticketId);
     }
 
     @Override

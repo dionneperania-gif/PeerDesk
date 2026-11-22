@@ -274,6 +274,12 @@ public class SystemVerificationTest {
         }
 
         @Override
+        public void onRatingsDataReceived(String classmateNick, double avgRating, int totalCount, String details) {}
+
+        @Override
+        public void onRatingSubmitted(int ticketId) {}
+
+        @Override
         public void onSystemMessage(String timestamp, String message) {}
 
         @Override

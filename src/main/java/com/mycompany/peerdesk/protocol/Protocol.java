@@ -38,6 +38,8 @@ public final class Protocol {
     public static final String CMD_TICKET_DELETE  = "TICKET_DELETE";  // TICKET_DELETE|<ticketId>
     public static final String CMD_TICKET_EDIT   = "TICKET_EDIT";    // TICKET_EDIT|<ticketId>|<category>|<subject>|<requester>
     public static final String CMD_REACT          = "REACT";          // REACT|<msgId>|<reactionType>
+    public static final String CMD_SUBMIT_RATING  = "SUBMIT_RATING";  // SUBMIT_RATING|<ticketId>|<stars>
+    public static final String CMD_GET_RATINGS    = "GET_RATINGS";    // GET_RATINGS|<classmateNick>
     public static final String CMD_PING           = "PING";           // PING
     public static final String CMD_PONG           = "PONG";           // PONG
 
@@ -51,6 +53,8 @@ public final class Protocol {
     public static final String BCAST_SYS          = "SYS_MSG";        // SYS_MSG|<time>|<message>
     public static final String BCAST_TICKETS      = "TICKET_LIST";    // TICKET_LIST|<ticket1>@@<ticket2>...
     public static final String BCAST_REACT        = "MSG_REACT";      // MSG_REACT|<msgId>|<reactionType>|<count>
+    public static final String RSP_RATINGS_DATA   = "RATINGS_DATA";   // RATINGS_DATA|<classmateNick>|<avgRating>|<totalCount>|<details: req~stars~time;req~stars~time>
+    public static final String RSP_RATING_OK      = "RATING_OK";      // RATING_OK|<ticketId>
     public static final String RSP_SERVER_ERR     = "SERVER_ERR";     // SERVER_ERR|<errorMessage>
 
     public static final String TICKET_DELIMITER   = "@@";

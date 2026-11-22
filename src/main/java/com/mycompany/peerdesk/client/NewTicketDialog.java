@@ -47,9 +47,21 @@ public class NewTicketDialog extends JDialog {
         gbc.gridx = 0; gbc.gridy = 0;
         formCard.add(createMiniLabel("REQUESTER:"), gbc);
         gbc.gridx = 1;
-        String defaultReq = (client != null && client.getCurrentNickname() != null) ? client.getCurrentNickname() : "";
-        PillTextField requesterField = new PillTextField(defaultReq, 20);
-        requesterField.setPlaceholder("e.g. Student Name");
+        String myName = (client != null && client.getCurrentNickname() != null) ? client.getCurrentNickname() : "";
+        String myId = (client != null && client.getCurrentStudentId() != null) ? client.getCurrentStudentId() : "";
+        String displayRequester;
+        if (!myName.isEmpty() && !myId.isEmpty() && !myName.equalsIgnoreCase(myId)) {
+            displayRequester = myName + " (" + myId + ")";
+        } else if (!myName.isEmpty()) {
+            displayRequester = myName;
+        } else if (!myId.isEmpty()) {
+            displayRequester = myId;
+        } else {
+            displayRequester = "Anonymous";
+        }
+        PillTextField requesterField = new PillTextField(displayRequester, 20);
+        requesterField.setEditable(false);
+        requesterField.setFocusable(false);
         formCard.add(requesterField, gbc);
 
         gbc.gridx = 0; gbc.gridy = 1;

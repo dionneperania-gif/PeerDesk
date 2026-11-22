@@ -120,13 +120,28 @@ public class ChatBubbleRow {
     }
 
     public static JPanel createSystemRow(String timestamp, String message, TicketActionCallback ticketCallback, int maxAvailableWidth) {
-        // Detect if this system message is announcing a ticket: e.g. "Alice submitted ticket #101: [Java] ..."
-        java.util.regex.Matcher m = java.util.regex.Pattern.compile("ticket #(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(message);
-        if (m.find() && ticketCallback != null) {
-            int ticketId = Integer.parseInt(m.group(1));
-            return createTicketAnnouncementRow(timestamp, message, ticketId, ticketCallback, maxAvailableWidth);
+        String lower = message.toLowerCase();
+        // Check if message is a resolution or rating announcement
+        boolean isResolvedAnnouncement = lower.contains("marked resolved") || lower.contains("has been resolved") || lower.contains("status updated to resolved");
+        boolean isRatingAnnouncement = lower.contains("rated ") && (lower.contains("star") || lower.contains("stars"));
+
+        if (isResolvedAnnouncement) {
+            return createResolvedAnnouncementRow(timestamp, message, maxAvailableWidth);
+        } else if (isRatingAnnouncement) {
+            return createRatingAnnouncementRow(timestamp, message, maxAvailableWidth);
         }
 
+        // Only actual newly created help requests ("submitted ticket #...") get the "New Help Request" card with Offer Help and View buttons
+        boolean isNewTicket = lower.contains("submitted ticket #") || lower.contains("created ticket #");
+        if (isNewTicket && ticketCallback != null) {
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("ticket #(\\d+)", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(message);
+            if (m.find()) {
+                int ticketId = Integer.parseInt(m.group(1));
+                return createTicketAnnouncementRow(timestamp, message, ticketId, ticketCallback, maxAvailableWidth);
+            }
+        }
+
+        // Standard system notice
         JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 4));
         row.setOpaque(false);
 
@@ -136,6 +151,86 @@ public class ChatBubbleRow {
         label.setBorder(new EmptyBorder(2, 10, 2, 10));
 
         row.add(label);
+        return row;
+    }
+
+    /**
+     * Visually distinct announcement for when a ticket is marked RESOLVED.
+     * Displays a clean, elegant Whimsy-styled card without "New Help Request" or "Offer Help" buttons.
+     */
+    private static JPanel createResolvedAnnouncementRow(String timestamp, String message, int maxAvailableWidth) {
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 4));
+        row.setOpaque(false);
+
+        EditorialCardPanel pill = new EditorialCardPanel(new BorderLayout(8, 6), 14);
+        pill.setFillColor(new Color(243, 252, 246)); // Soft mint/sage tint
+        pill.setBorderColor(new Color(195, 230, 205));
+        pill.setBorder(new EmptyBorder(6, 12, 6, 12));
+
+        // Header: Badge + Timestamp
+        JPanel topRow = new JPanel(new BorderLayout(6, 0));
+        topRow.setOpaque(false);
+
+        JLabel badgeLbl = new JLabel("RESOLVED");
+        badgeLbl.setFont(BotanicalTheme.fontSans(10, Font.BOLD));
+        badgeLbl.setForeground(BotanicalTheme.FOREST_DEEP);
+        topRow.add(badgeLbl, BorderLayout.WEST);
+
+        JLabel timeLbl = new JLabel(timestamp);
+        timeLbl.setFont(BotanicalTheme.fontSans(10, Font.PLAIN));
+        timeLbl.setForeground(BotanicalTheme.MUTED_TEXT);
+        topRow.add(timeLbl, BorderLayout.EAST);
+
+        pill.add(topRow, BorderLayout.NORTH);
+
+        int contentW = Math.max(160, maxAvailableWidth - 36);
+        WrapLabel msgLabel = new WrapLabel(message, contentW);
+        msgLabel.setFont(BotanicalTheme.fontSans(12, Font.PLAIN));
+        msgLabel.setForeground(BotanicalTheme.CHARCOAL_TEXT);
+        pill.add(msgLabel, BorderLayout.CENTER);
+
+        pill.putClientProperty("announcementLabel", msgLabel);
+        row.add(pill);
+        return row;
+    }
+
+    /**
+     * Visually distinct announcement for when a helper rating is submitted.
+     * Displays a gentle pastel golden-peach Whimsy card without "New Help Request" or "Offer Help" buttons.
+     */
+    private static JPanel createRatingAnnouncementRow(String timestamp, String message, int maxAvailableWidth) {
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 4));
+        row.setOpaque(false);
+
+        EditorialCardPanel pill = new EditorialCardPanel(new BorderLayout(8, 6), 14);
+        pill.setFillColor(new Color(255, 251, 238)); // Warm gentle pastel honey
+        pill.setBorderColor(new Color(245, 225, 175));
+        pill.setBorder(new EmptyBorder(6, 12, 6, 12));
+
+        // Header: Badge + Timestamp
+        JPanel topRow = new JPanel(new BorderLayout(6, 0));
+        topRow.setOpaque(false);
+
+        JLabel badgeLbl = new JLabel("RATING FEEDBACK");
+        badgeLbl.setFont(BotanicalTheme.fontSans(10, Font.BOLD));
+        badgeLbl.setForeground(new Color(181, 101, 29)); // Pastel amber
+        topRow.add(badgeLbl, BorderLayout.WEST);
+
+        JLabel timeLbl = new JLabel(timestamp);
+        timeLbl.setFont(BotanicalTheme.fontSans(10, Font.PLAIN));
+        timeLbl.setForeground(BotanicalTheme.MUTED_TEXT);
+        topRow.add(timeLbl, BorderLayout.EAST);
+
+        pill.add(topRow, BorderLayout.NORTH);
+
+        int contentW = Math.max(160, maxAvailableWidth - 36);
+        WrapLabel msgLabel = new WrapLabel(message, contentW);
+        msgLabel.setFont(BotanicalTheme.fontSans(12, Font.PLAIN));
+        msgLabel.setForeground(BotanicalTheme.CHARCOAL_TEXT);
+        pill.add(msgLabel, BorderLayout.CENTER);
+
+        pill.putClientProperty("announcementLabel", msgLabel);
+        row.add(pill);
         return row;
     }
 

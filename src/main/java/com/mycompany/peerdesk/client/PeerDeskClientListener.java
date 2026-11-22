@@ -17,6 +17,8 @@ public interface PeerDeskClientListener {
     void onUserListUpdated(List<String> users);
     void onTicketListUpdated(List<Ticket> tickets);
     void onMessageReactionUpdated(int messageId, String reactionType, int count);
+    void onRatingsDataReceived(String classmateNick, double avgRating, int totalCount, String details);
+    void onRatingSubmitted(int ticketId);
     void onServerMessage(String message, boolean isError);
     void onDisconnected(String reason);
 }

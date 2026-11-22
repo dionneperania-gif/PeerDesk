@@ -1,5 +1,6 @@
 package com.mycompany.peerdesk.server;
 
+import com.mycompany.peerdesk.model.HelperRating;
 import com.mycompany.peerdesk.model.Ticket;
 import com.mycompany.peerdesk.protocol.Protocol;
 import java.io.BufferedReader;
@@ -46,7 +47,9 @@ public class PeerDeskServer {
     private static final String STORAGE_FILE = System.getProperty("user.home") + File.separator + "peerdesk_tickets.dat";
     private static final String CHAT_STORAGE_FILE = System.getProperty("user.home") + File.separator + "peerdesk_chat_history.dat";
     private static final String STUDENTS_STORAGE_FILE = System.getProperty("user.home") + File.separator + "peerdesk_students.dat";
+    private static final String RATINGS_STORAGE_FILE = System.getProperty("user.home") + File.separator + "peerdesk_ratings.dat";
     private final java.util.Map<String, String> registeredStudents = new java.util.concurrent.ConcurrentHashMap<>();
+    private final List<HelperRating> ratings = Collections.synchronizedList(new ArrayList<>());
     private final boolean persistenceEnabled;
     private ServerEventListener listener;
 
@@ -99,6 +102,7 @@ public class PeerDeskServer {
         loadPersistedTickets();
         loadPersistedChat();
         loadPersistedStudents();
+        loadPersistedRatings();
 
         // Accept loop in background thread
         new Thread(this::acceptLoop, "Server-Accept-Thread").start();
@@ -243,6 +247,48 @@ public class PeerDeskServer {
             writer.flush();
         } catch (IOException e) {
             log("Warning: Failed to save students: " + e.getMessage());
+        }
+    }
+
+    private void loadPersistedRatings() {
+        if (!persistenceEnabled) return;
+        File file = new File(RATINGS_STORAGE_FILE);
+        if (!file.exists()) return;
+
+        synchronized (ratings) {
+            ratings.clear();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+                    if (line.isEmpty()) continue;
+                    HelperRating r = HelperRating.deserialize(line);
+                    if (r != null) {
+                        ratings.add(r);
+                    }
+                }
+                log("Restored " + ratings.size() + " helper rating(s) from persistent storage.");
+            } catch (IOException e) {
+                log("Warning: Failed to load ratings from " + RATINGS_STORAGE_FILE + ": " + e.getMessage());
+            }
+        }
+    }
+
+    private void saveRatingsToStorage() {
+        if (!persistenceEnabled) return;
+        File file = new File(RATINGS_STORAGE_FILE);
+        synchronized (ratings) {
+            try (BufferedWriter writer = new BufferedWriter(
+                    new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+                for (HelperRating r : ratings) {
+                    writer.write(r.serialize());
+                    writer.newLine();
+                }
+                writer.flush();
+            } catch (IOException e) {
+                log("Warning: Failed to save ratings to " + RATINGS_STORAGE_FILE + ": " + e.getMessage());
+            }
         }
     }
 
@@ -593,9 +639,18 @@ public class PeerDeskServer {
     }
 
     public void updateTicketStatus(int ticketId, Ticket.Status newStatus, String updaterNick) {
+        updateTicketStatus(ticketId, newStatus, updaterNick, updaterNick);
+    }
+
+    public void updateTicketStatus(int ticketId, Ticket.Status newStatus, String updaterNick, String updaterStudentId) {
         synchronized (tickets) {
             for (Ticket t : tickets) {
                 if (t.getId() == ticketId) {
+                    if (newStatus == Ticket.Status.RESOLVED) {
+                        // Resolving is restricted to requester only
+                        resolveTicket(ticketId, updaterNick, updaterStudentId);
+                        return;
+                    }
                     t.setStatus(newStatus);
                     if (newStatus == Ticket.Status.OPEN) {
                         t.setHelper("None");
@@ -612,9 +667,30 @@ public class PeerDeskServer {
     }
 
     public void resolveTicket(int ticketId, String solverNick) {
+        resolveTicket(ticketId, solverNick, solverNick);
+    }
+
+    public void resolveTicket(int ticketId, String solverNick, String solverStudentId) {
         synchronized (tickets) {
             for (Ticket t : tickets) {
                 if (t.getId() == ticketId) {
+                    // Check if solver is the original requester (by Student ID or name)
+                    boolean isRequester = (solverStudentId != null && solverStudentId.equalsIgnoreCase(t.getPeerId()))
+                            || solverNick.equalsIgnoreCase(t.getRequester())
+                            || solverNick.equalsIgnoreCase(t.getPeerId())
+                            || (t.getRequester() != null && t.getRequester().contains("(" + solverStudentId + ")"));
+
+                    if (!isRequester) {
+                        log("Warning: " + solverNick + " attempted to resolve ticket #" + ticketId + " without permission.");
+                        for (ClientHandler client : clients) {
+                            if (solverNick.equalsIgnoreCase(client.getNickname())) {
+                                client.sendMessage(Protocol.buildPacket(Protocol.RSP_SERVER_ERR, "Only the original requester can mark this ticket as RESOLVED."));
+                                break;
+                            }
+                        }
+                        return;
+                    }
+
                     t.setStatus(Ticket.Status.RESOLVED);
                     saveTicketsToStorage();
                     broadcastTicketList();
@@ -623,6 +699,152 @@ public class PeerDeskServer {
                 }
             }
         }
+    }
+
+    /**
+     * Submits a rating (1-5 stars) for a resolved ticket.
+     * Enforces rules:
+     * 1. Ticket must be in RESOLVED status.
+     * 2. Only original requester can submit.
+     * 3. Helper cannot rate themselves.
+     * 4. No duplicate ratings for the same ticket.
+     * 5. Single rating is credited to all assigned helpers on the ticket.
+     */
+    public String submitRating(int ticketId, int stars, String requesterNick, String requesterStudentId) {
+        if (stars < 1 || stars > 5) {
+            return "Rating must be between 1 and 5 stars.";
+        }
+
+        synchronized (tickets) {
+            Ticket ticket = null;
+            for (Ticket t : tickets) {
+                if (t.getId() == ticketId) {
+                    ticket = t;
+                    break;
+                }
+            }
+
+            if (ticket == null) {
+                return "Ticket #" + ticketId + " does not exist.";
+            }
+
+            if (ticket.getStatus() != Ticket.Status.RESOLVED) {
+                return "Only resolved tickets can be rated.";
+            }
+
+            // Verify caller is the original requester
+            boolean isRequester = (requesterStudentId != null && requesterStudentId.equalsIgnoreCase(ticket.getPeerId()))
+                    || requesterNick.equalsIgnoreCase(ticket.getRequester())
+                    || requesterNick.equalsIgnoreCase(ticket.getPeerId())
+                    || (ticket.getRequester() != null && ticket.getRequester().contains("(" + requesterStudentId + ")"));
+            if (!isRequester) {
+                return "Only the original requester can rate this ticket.";
+            }
+
+            // Check helpers assigned
+            String helperField = ticket.getHelper();
+            if (helperField == null || helperField.trim().isEmpty() || "None".equalsIgnoreCase(helperField.trim())) {
+                return "No helper was assigned to this ticket to rate.";
+            }
+
+            List<String> helperList = new ArrayList<>();
+            for (String h : helperField.split(",")) {
+                String trimmed = h.trim();
+                if (!trimmed.isEmpty() && !"None".equalsIgnoreCase(trimmed)) {
+                    helperList.add(trimmed);
+                }
+            }
+
+            if (helperList.isEmpty()) {
+                return "No helper was assigned to this ticket to rate.";
+            }
+
+            // Prevent helper from rating themselves / their own assistance
+            for (String h : helperList) {
+                if (h.equalsIgnoreCase(requesterNick) || (requesterStudentId != null && h.equalsIgnoreCase(requesterStudentId))) {
+                    return "You cannot rate yourself or your own assistance.";
+                }
+            }
+
+            // Prevent duplicate ratings for this ticket
+            synchronized (ratings) {
+                for (HelperRating r : ratings) {
+                    if (r.getTicketId() == ticketId) {
+                        return "This ticket has already been rated.";
+                    }
+                }
+
+                // Award rating to all helpers
+                String timestamp = Protocol.getCurrentTimestamp();
+                for (String h : helperList) {
+                    ratings.add(new HelperRating(ticketId, h, ticket.getRequester(), stars, timestamp));
+                }
+                saveRatingsToStorage();
+            }
+
+            String helpersPhrase;
+            if (helperList.size() == 1) {
+                helpersPhrase = helperList.get(0);
+            } else if (helperList.size() == 2) {
+                helpersPhrase = helperList.get(0) + " and " + helperList.get(1);
+            } else {
+                helpersPhrase = helperList.get(0) + " and the other helpers";
+            }
+            log("Rating submitted for ticket #" + ticketId + " (" + stars + " stars) to [" + String.join(", ", helperList) + "] by " + requesterNick);
+            broadcastSystemMessage(requesterNick + " rated " + helpersPhrase + " " + stars + " star" + (stars > 1 ? "s" : "") + " for ticket #" + ticketId + ".");
+            return null; // success
+        }
+    }
+
+    /**
+     * Gets rating summary for a classmate.
+     * Returns: [classmateNick, avgStr, totalCountStr, detailsStr]
+     */
+    public String[] getRatingsForClassmate(String classmateIdentifier) {
+        if (classmateIdentifier == null) return new String[]{"", "0.0", "0", ""};
+        String target = classmateIdentifier.trim();
+        // Also if identifier has "Name (ID)", extract name and ID
+        String targetName = target;
+        String targetId = target;
+        if (target.contains("(") && target.endsWith(")")) {
+            int openIdx = target.indexOf('(');
+            targetName = target.substring(0, openIdx).trim();
+            targetId = target.substring(openIdx + 1, target.length() - 1).trim();
+        }
+
+        List<HelperRating> matched = new ArrayList<>();
+        int sum = 0;
+        synchronized (ratings) {
+            for (HelperRating r : ratings) {
+                String h = r.getHelperName();
+                if (h.equalsIgnoreCase(target) || h.equalsIgnoreCase(targetName) || h.equalsIgnoreCase(targetId)) {
+                    matched.add(r);
+                    sum += r.getStars();
+                }
+            }
+        }
+
+        int count = matched.size();
+        double avg = count > 0 ? (double) sum / count : 0.0;
+        String avgStr = String.format(java.util.Locale.US, "%.1f", avg);
+        String countStr = String.valueOf(count);
+
+        StringBuilder details = new StringBuilder();
+        for (HelperRating r : matched) {
+            if (details.length() > 0) details.append(";");
+            details.append(r.getRequesterName()).append("~").append(r.getStars()).append("~").append(r.getTimestamp()).append("~").append(r.getTicketId());
+        }
+
+        return new String[]{targetName, avgStr, countStr, details.toString()};
+    }
+
+    public boolean hasTicketBeenRated(int ticketId) {
+        synchronized (ratings) {
+            for (HelperRating r : ratings) {
+                if (r.getTicketId() == ticketId) return true;
+            }
+        }
+        return false;
     }
 
     public void deleteTicket(int ticketId, String requesterId, String requesterNick) {
@@ -637,10 +859,23 @@ public class PeerDeskServer {
             if (target == null) {
                 return;
             }
-            if (!requesterId.equalsIgnoreCase(target.getPeerId())
-                    && !requesterNick.equalsIgnoreCase(target.getRequester())
-                    && !requesterNick.equalsIgnoreCase(target.getPeerId())) {
+
+            // Check if the caller is the original requester (by Student ID, name, or embedded ID)
+            boolean isRequester = (requesterId != null && requesterId.equalsIgnoreCase(target.getPeerId()))
+                    || requesterNick.equalsIgnoreCase(target.getRequester())
+                    || requesterNick.equalsIgnoreCase(target.getPeerId())
+                    || (target.getRequester() != null && requesterId != null && target.getRequester().contains("(" + requesterId + ")"));
+
+            if (!isRequester) {
                 log("Warning: " + requesterNick + " (" + requesterId + ") attempted to delete ticket #" + ticketId + " without permission.");
+                // Send error back to the requesting client
+                for (ClientHandler client : clients) {
+                    if (requesterNick.equalsIgnoreCase(client.getNickname())
+                            || (requesterId != null && requesterId.equalsIgnoreCase(client.getStudentId()))) {
+                        client.sendMessage(Protocol.buildPacket(Protocol.RSP_SERVER_ERR, "Only the original requester can remove this ticket."));
+                        break;
+                    }
+                }
                 return;
             }
             tickets.removeIf(t -> t.getId() == ticketId);
@@ -695,6 +930,7 @@ public class PeerDeskServer {
         saveTicketsToStorage();
         saveChatToStorage();
         saveStudentsToStorage();
+        saveRatingsToStorage();
 
         log("PeerDesk Server stopped.");
     }

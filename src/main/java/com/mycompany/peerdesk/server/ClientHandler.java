@@ -178,9 +178,12 @@ public class ClientHandler implements Runnable {
                 if (parts.length >= 3) {
                     String category = parts[1].trim();
                     String subject = parts[2].trim();
-                    String customRequester = (parts.length >= 4 && !parts[3].trim().isEmpty()) ? parts[3].trim() : this.nickname;
+                    // Requester is always bound to authenticated identity: Name (StudentId) or Name
+                    String authenticatedRequester = (this.studentId != null && !this.studentId.equalsIgnoreCase(this.nickname))
+                            ? this.nickname + " (" + this.studentId + ")"
+                            : this.nickname;
                     if (!category.isEmpty() && !subject.isEmpty()) {
-                        server.createTicket(this.studentId != null ? this.studentId : this.nickname, customRequester, category, subject);
+                        server.createTicket(this.studentId != null ? this.studentId : this.nickname, authenticatedRequester, category, subject);
                     } else {
                         sendMessage(Protocol.buildPacket(Protocol.RSP_SERVER_ERR, "Ticket category and subject cannot be blank."));
                     }
@@ -202,7 +205,7 @@ public class ClientHandler implements Runnable {
                 if (parts.length >= 2) {
                     try {
                         int ticketId = Integer.parseInt(parts[1]);
-                        server.resolveTicket(ticketId, this.nickname);
+                        server.resolveTicket(ticketId, this.nickname, this.studentId != null ? this.studentId : this.nickname);
                     } catch (NumberFormatException e) {
                         sendMessage(Protocol.buildPacket(Protocol.RSP_SERVER_ERR, "Invalid ticket ID format."));
                     }
@@ -215,7 +218,7 @@ public class ClientHandler implements Runnable {
                         int ticketId = Integer.parseInt(parts[1]);
                         String statusStr = parts[2].trim().toUpperCase();
                         Ticket.Status newStatus = Ticket.Status.valueOf(statusStr);
-                        server.updateTicketStatus(ticketId, newStatus, this.nickname);
+                        server.updateTicketStatus(ticketId, newStatus, this.nickname, this.studentId != null ? this.studentId : this.nickname);
                     } catch (IllegalArgumentException e) {
                         sendMessage(Protocol.buildPacket(Protocol.RSP_SERVER_ERR, "Invalid ticket ID or status format."));
                     }
@@ -258,6 +261,31 @@ public class ClientHandler implements Runnable {
                         String reaction = parts[2].trim();
                         server.handleReaction(msgId, reaction, this.nickname);
                     } catch (NumberFormatException ignored) {}
+                }
+                break;
+
+            case Protocol.CMD_SUBMIT_RATING:
+                if (parts.length >= 3) {
+                    try {
+                        int ticketId = Integer.parseInt(parts[1]);
+                        int stars = Integer.parseInt(parts[2]);
+                        String error = server.submitRating(ticketId, stars, this.nickname, this.studentId);
+                        if (error != null) {
+                            sendMessage(Protocol.buildPacket(Protocol.RSP_SERVER_ERR, error));
+                        } else {
+                            sendMessage(Protocol.buildPacket(Protocol.RSP_RATING_OK, String.valueOf(ticketId)));
+                        }
+                    } catch (NumberFormatException e) {
+                        sendMessage(Protocol.buildPacket(Protocol.RSP_SERVER_ERR, "Invalid rating parameters."));
+                    }
+                }
+                break;
+
+            case Protocol.CMD_GET_RATINGS:
+                if (parts.length >= 2) {
+                    String target = parts[1].trim();
+                    String[] info = server.getRatingsForClassmate(target);
+                    sendMessage(Protocol.buildPacket(Protocol.RSP_RATINGS_DATA, info[0], info[1], info[2], info[3]));
                 }
                 break;
 
