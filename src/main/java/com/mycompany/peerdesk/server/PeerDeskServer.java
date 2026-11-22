@@ -45,6 +45,8 @@ public class PeerDeskServer {
 
     private static final String STORAGE_FILE = System.getProperty("user.home") + File.separator + "peerdesk_tickets.dat";
     private static final String CHAT_STORAGE_FILE = System.getProperty("user.home") + File.separator + "peerdesk_chat_history.dat";
+    private static final String STUDENTS_STORAGE_FILE = System.getProperty("user.home") + File.separator + "peerdesk_students.dat";
+    private final java.util.Map<String, String> registeredStudents = new java.util.concurrent.ConcurrentHashMap<>();
     private final boolean persistenceEnabled;
     private ServerEventListener listener;
 
@@ -96,6 +98,7 @@ public class PeerDeskServer {
         // Load previously persisted tickets from disk (empty by default on clean start)
         loadPersistedTickets();
         loadPersistedChat();
+        loadPersistedStudents();
 
         // Accept loop in background thread
         new Thread(this::acceptLoop, "Server-Accept-Thread").start();
@@ -205,6 +208,44 @@ public class PeerDeskServer {
         }
     }
 
+    private void loadPersistedStudents() {
+        if (!persistenceEnabled) return;
+        File file = new File(STUDENTS_STORAGE_FILE);
+        if (!file.exists()) return;
+
+        registeredStudents.clear();
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty()) continue;
+                String[] parts = line.split("~", 2);
+                if (parts.length >= 2) {
+                    registeredStudents.put(parts[0].trim(), parts[1].trim());
+                }
+            }
+            log("Restored " + registeredStudents.size() + " registered student record(s).");
+        } catch (IOException e) {
+            log("Warning: Failed to load registered students: " + e.getMessage());
+        }
+    }
+
+    private void saveStudentsToStorage() {
+        if (!persistenceEnabled) return;
+        File file = new File(STUDENTS_STORAGE_FILE);
+        try (BufferedWriter writer = new BufferedWriter(
+                new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+            for (java.util.Map.Entry<String, String> entry : registeredStudents.entrySet()) {
+                writer.write(entry.getKey() + "~" + entry.getValue());
+                writer.newLine();
+            }
+            writer.flush();
+        } catch (IOException e) {
+            log("Warning: Failed to save students: " + e.getMessage());
+        }
+    }
+
     private void acceptLoop() {
         while (running) {
             try {
@@ -221,10 +262,65 @@ public class PeerDeskServer {
     }
 
     /**
-     * Validates nickname: non-blank, 2-16 chars, no delimiter chars, unique across active users.
-     * Returns null if valid, or an error string if invalid.
+     * Normalizes a Student ID string (e.g. "20251124" -> "2025-1124").
+     */
+    public static String normalizeStudentId(String id) {
+        if (id == null) return null;
+        String clean = id.trim().replaceAll("\\s+", "");
+        if (clean.matches("^\\d{8}$")) {
+            return clean.substring(0, 4) + "-" + clean.substring(4);
+        }
+        return clean;
+    }
+
+    /**
+     * Validates student registration: nickname format and studentId constraints.
+     * Student ID must be 8 digits (e.g. 2025-1124), only numbers and symbols, no letters.
+     * If already registered, the submitted name must match the registered name.
+     */
+    public synchronized String validateRegistration(String nick, String studentId) {
+        String nickError = validateNicknameFormat(nick);
+        if (nickError != null) return nickError;
+
+        if (studentId != null) {
+            String idError = validateStudentId(studentId);
+            if (idError != null) return idError;
+
+            String normalizedId = normalizeStudentId(studentId);
+            String cleanNick = nick.trim();
+            String registeredName = registeredStudents.get(normalizedId);
+            if (registeredName != null) {
+                if (!registeredName.equalsIgnoreCase(cleanNick)) {
+                    return "Wrong Name or Student ID! The Student ID '" + normalizedId
+                            + "' is registered to '" + registeredName + "'. Please check your credentials.";
+                }
+            } else {
+                // First-time registration for this Student ID
+                registeredStudents.put(normalizedId, cleanNick);
+                saveStudentsToStorage();
+            }
+        } else {
+            // Legacy single-identifier mode: nickname must be unique across active clients
+            for (ClientHandler client : clients) {
+                if (nick.trim().equalsIgnoreCase(client.getNickname())) {
+                    return "Nickname '" + nick.trim() + "' is already in use by another peer.";
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Legacy validation method maintained for backward compatibility.
      */
     public synchronized String validateNickname(String nick) {
+        return validateRegistration(nick, null);
+    }
+
+    /**
+     * Validates nickname format: non-blank, 2-16 chars, no delimiter chars.
+     */
+    public synchronized String validateNicknameFormat(String nick) {
         if (nick == null || nick.trim().isEmpty()) {
             return "Nickname cannot be blank.";
         }
@@ -235,17 +331,51 @@ public class PeerDeskServer {
         if (clean.contains("|") || clean.contains("~") || clean.contains("@") || clean.contains(",")) {
             return "Nickname contains illegal characters (| ~ @ ,).";
         }
+        return null;
+    }
+
+    /**
+     * Validates Student ID: non-blank, exactly 8 digits (e.g. 2025-1124), NO letters, unique among online clients.
+     */
+    public synchronized String validateStudentId(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            return "Student ID cannot be blank.";
+        }
+        String clean = normalizeStudentId(id);
+        if (clean.contains("|") || clean.contains("~") || clean.contains("@") || clean.contains(",")) {
+            return "Student ID contains illegal characters (| ~ @ ,).";
+        }
+        for (char c : clean.toCharArray()) {
+            if (Character.isLetter(c)) {
+                return "Student ID must contain only numbers and symbols, no letters.";
+            }
+        }
+        if (!clean.matches("^\\d{4}-\\d{4}$")) {
+            return "Invalid Student ID format. Must be 8 digits (e.g. 2025-1124).";
+        }
         for (ClientHandler client : clients) {
-            if (clean.equalsIgnoreCase(client.getNickname())) {
-                return "Nickname '" + clean + "' is already in use by another peer.";
+            if (clean.equalsIgnoreCase(client.getStudentId())) {
+                return "Student ID '" + clean + "' is already logged in on another session.";
             }
         }
         return null;
     }
 
+    public void updateStudentName(String studentId, String newName) {
+        String normalizedId = normalizeStudentId(studentId);
+        if (normalizedId != null && newName != null && !newName.trim().isEmpty()) {
+            registeredStudents.put(normalizedId, newName.trim());
+            saveStudentsToStorage();
+        }
+    }
+
     public void registerClient(ClientHandler client) {
         clients.add(client);
-        log("Client registered: " + client.getNickname() + " (Total active: " + clients.size() + ")");
+        String name = client.getNickname();
+        if (client.getStudentId() != null && !client.getStudentId().equalsIgnoreCase(name)) {
+            name = name + " (" + client.getStudentId() + ")";
+        }
+        log("Client registered: " + name + " (Total active: " + clients.size() + ")");
         if (listener != null) {
             listener.onClientCountChanged(clients.size());
         }
@@ -253,7 +383,11 @@ public class PeerDeskServer {
 
     public void unregisterClient(ClientHandler client) {
         clients.remove(client);
-        log("Client unregistered: " + client.getNickname() + " (Total active: " + clients.size() + ")");
+        String name = client.getNickname();
+        if (client.getStudentId() != null && !client.getStudentId().equalsIgnoreCase(name)) {
+            name = name + " (" + client.getStudentId() + ")";
+        }
+        log("Client unregistered: " + name + " (Total active: " + clients.size() + ")");
         if (listener != null) {
             listener.onClientCountChanged(clients.size());
         }
@@ -327,10 +461,16 @@ public class PeerDeskServer {
     public void broadcastUserList() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < clients.size(); i++) {
-            String nick = clients.get(i).getNickname();
+            ClientHandler c = clients.get(i);
+            String nick = c.getNickname();
+            String sid = c.getStudentId();
             if (nick != null) {
                 if (sb.length() > 0) sb.append(",");
-                sb.append(nick);
+                if (sid != null && !sid.isEmpty() && !sid.equalsIgnoreCase(nick)) {
+                    sb.append(nick).append(" (").append(sid).append(")");
+                } else {
+                    sb.append(nick);
+                }
             }
         }
         String packet = Protocol.buildPacket(Protocol.BCAST_USER_LIST, sb.toString());
@@ -379,7 +519,10 @@ public class PeerDeskServer {
         tickets.add(ticket);
         saveTicketsToStorage();
         broadcastTicketList();
-        broadcastSystemMessage(requester + " submitted ticket #" + id + ": [" + category + "] " + subject);
+        String announcementRequester = (peerId != null && !peerId.equalsIgnoreCase(requester))
+                ? requester + " (" + peerId + ")"
+                : requester;
+        broadcastSystemMessage(announcementRequester + " submitted ticket #" + id + ": [" + category + "] " + subject);
     }
 
     public void editTicket(int ticketId, String newCategory, String newSubject, String newRequester, String editorNick) {
@@ -485,7 +628,7 @@ public class PeerDeskServer {
         }
     }
 
-    public void deleteTicket(int ticketId, String requesterNick) {
+    public void deleteTicket(int ticketId, String requesterId, String requesterNick) {
         synchronized (tickets) {
             Ticket target = null;
             for (Ticket t : tickets) {
@@ -497,9 +640,10 @@ public class PeerDeskServer {
             if (target == null) {
                 return;
             }
-            if (!requesterNick.equalsIgnoreCase(target.getRequester())
+            if (!requesterId.equalsIgnoreCase(target.getPeerId())
+                    && !requesterNick.equalsIgnoreCase(target.getRequester())
                     && !requesterNick.equalsIgnoreCase(target.getPeerId())) {
-                log("Warning: " + requesterNick + " attempted to delete ticket #" + ticketId + " without permission.");
+                log("Warning: " + requesterNick + " (" + requesterId + ") attempted to delete ticket #" + ticketId + " without permission.");
                 return;
             }
             tickets.removeIf(t -> t.getId() == ticketId);
@@ -507,6 +651,10 @@ public class PeerDeskServer {
         saveTicketsToStorage();
         broadcastTicketList();
         broadcastSystemMessage("Ticket #" + ticketId + " was removed by " + requesterNick);
+    }
+
+    public void deleteTicket(int ticketId, String requesterNick) {
+        deleteTicket(ticketId, requesterNick, requesterNick);
     }
 
     /**
@@ -549,6 +697,7 @@ public class PeerDeskServer {
         // 4. Save final state
         saveTicketsToStorage();
         saveChatToStorage();
+        saveStudentsToStorage();
 
         log("PeerDesk Server stopped.");
     }

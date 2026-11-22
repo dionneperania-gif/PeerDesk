@@ -70,6 +70,7 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
     // Connection components
     private PillTextField hostField;
     private PillTextField portField;
+    private PillTextField nameField;
     private PillTextField nickField;
     private PillButton connectBtn;
     private JLabel statusBadge;
@@ -194,9 +195,42 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
         portField.setFont(BotanicalTheme.FONT_INPUT);
         inputsPanel.add(portField);
 
-        inputsPanel.add(createMiniLabel("PEER ID:"));
-        nickField = new PillTextField("Peer" + (int)(Math.random() * 899 + 100), 8);
-        nickField.setFont(BotanicalTheme.fontSans(14, Font.BOLD));
+        inputsPanel.add(createMiniLabel("NAME:"));
+        nameField = new PillTextField("", 10);
+        nameField.setPlaceholder("Your Name");
+        nameField.setFont(BotanicalTheme.fontSans(13, Font.BOLD));
+        inputsPanel.add(nameField);
+
+        inputsPanel.add(createMiniLabel("STUDENT ID:"));
+        nickField = new PillTextField("", 9);
+        nickField.setPlaceholder("2025-1124");
+        nickField.setFont(BotanicalTheme.fontSans(13, Font.BOLD));
+        // Strict input restriction: Student ID allows ONLY numbers and symbols, NO letters
+        ((javax.swing.text.AbstractDocument) nickField.getDocument()).setDocumentFilter(new javax.swing.text.DocumentFilter() {
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, javax.swing.text.AttributeSet attr) throws javax.swing.text.BadLocationException {
+                if (string == null) return;
+                StringBuilder sb = new StringBuilder();
+                for (char c : string.toCharArray()) {
+                    if (!Character.isLetter(c) && c != '|' && c != '~' && c != '@' && c != ',') {
+                        sb.append(c);
+                    }
+                }
+                super.insertString(fb, offset, sb.toString(), attr);
+            }
+
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, javax.swing.text.AttributeSet attrs) throws javax.swing.text.BadLocationException {
+                if (text == null) return;
+                StringBuilder sb = new StringBuilder();
+                for (char c : text.toCharArray()) {
+                    if (!Character.isLetter(c) && c != '|' && c != '~' && c != '@' && c != ',') {
+                        sb.append(c);
+                    }
+                }
+                super.replace(fb, offset, length, sb.toString(), attrs);
+            }
+        });
         inputsPanel.add(nickField);
 
         connectBtn = new PillButton("Connect", BotanicalTheme.BUBBLEGUM_PINK, Color.WHITE);
@@ -450,7 +484,7 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
         ticketTable.getColumnModel().getColumn(1).setPreferredWidth(105);
         ticketTable.getColumnModel().getColumn(2).setPreferredWidth(105);
         ticketTable.getColumnModel().getColumn(3).setPreferredWidth(155);
-        ticketTable.getColumnModel().getColumn(4).setPreferredWidth(80);
+        ticketTable.getColumnModel().getColumn(4).setPreferredWidth(120);
         ticketTable.getColumnModel().getColumn(5).setPreferredWidth(80);
 
         // Status Renderer
@@ -624,7 +658,8 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
         } else {
             String host = hostField.getText().trim();
             String portStr = portField.getText().trim();
-            String nick = nickField.getText().trim();
+            String name = (nameField != null) ? nameField.getText().trim() : "";
+            String studentId = nickField.getText().trim();
 
             if (host.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Server IP address cannot be blank.", "Input Error", JOptionPane.WARNING_MESSAGE);
@@ -638,17 +673,37 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
                 JOptionPane.showMessageDialog(this, "Port must be a number between 1 and 65535.", "Input Error", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            if (nick.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Nickname cannot be blank.", "Input Error", JOptionPane.WARNING_MESSAGE);
+            if (name.isEmpty()) {
+                WhimsicalDialog.showNotice(this, "Input Required", "Please enter your Name before signing in.", "NAME");
                 return;
             }
+            if (studentId.isEmpty()) {
+                WhimsicalDialog.showNotice(this, "Input Required", "Please enter your Student ID (8 digits, e.g. 2025-1124).", "STUDENT ID");
+                return;
+            }
+            for (char c : studentId.toCharArray()) {
+                if (Character.isLetter(c)) {
+                    WhimsicalDialog.showNotice(this, "Invalid Student ID", "Student ID must contain only numbers and symbols, no letters.", "INVALID");
+                    return;
+                }
+            }
+            String normalizedId = studentId.replaceAll("\\s+", "");
+            if (normalizedId.matches("^\\d{8}$")) {
+                normalizedId = normalizedId.substring(0, 4) + "-" + normalizedId.substring(4);
+                nickField.setText(normalizedId);
+            }
+            if (!normalizedId.matches("^\\d{4}-\\d{4}$")) {
+                WhimsicalDialog.showNotice(this, "Invalid Student ID", "Student ID must be 8 digits like 2025-1124.", "INVALID");
+                return;
+            }
+            studentId = normalizedId;
 
             statusBadge.setText("  [CONNECTING]  ");
             statusBadge.setBackground(BotanicalTheme.PASTEL_YELLOW);
             statusBadge.setForeground(BotanicalTheme.PASTEL_AMBER);
             connectBtn.setEnabled(false);
 
-            client.connectAsync(host, port, nick);
+            client.connectAsync(host, port, name, studentId);
         }
     }
 
@@ -784,6 +839,7 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
 
             hostField.setEnabled(false);
             portField.setEnabled(false);
+            if (nameField != null) nameField.setEnabled(false);
             nickField.setEnabled(false);
             messageField.setEnabled(true);
             sendBtn.setEnabled(true);
@@ -805,6 +861,7 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
 
             hostField.setEnabled(true);
             portField.setEnabled(true);
+            if (nameField != null) nameField.setEnabled(true);
             nickField.setEnabled(true);
             messageField.setEnabled(false);
             sendBtn.setEnabled(false);
@@ -847,20 +904,26 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
     @Override
     public void onConnected(String assignedNick) {
         updateConnectionState(true);
-        nickField.setText(assignedNick);
-        messagesFeed.add(ChatBubbleRow.createSystemRow(Protocol.getCurrentTimestamp(), "Connected to PeerDesk as " + assignedNick));
+        if (nameField != null) nameField.setText(assignedNick);
+        if (client.getCurrentStudentId() != null) {
+            nickField.setText(client.getCurrentStudentId());
+        }
+        String myDisplay = (client.getCurrentStudentId() != null && !client.getCurrentStudentId().equalsIgnoreCase(assignedNick))
+                ? assignedNick + " (" + client.getCurrentStudentId() + ")"
+                : assignedNick;
+        messagesFeed.add(ChatBubbleRow.createSystemRow(Protocol.getCurrentTimestamp(), "Connected to PeerDesk as " + myDisplay));
         scrollToBottom();
     }
 
     @Override
     public void onAuthFailed(String reason) {
         updateConnectionState(false);
-        JOptionPane.showMessageDialog(this, reason, "Connection Failed", JOptionPane.ERROR_MESSAGE);
+        WhimsicalDialog.showNotice(this, "Sign-in Failed", reason, "INVALID");
     }
 
     @Override
     public void onNameChangeSuccess(String newNick) {
-        nickField.setText(newNick);
+        if (nameField != null) nameField.setText(newNick);
         messagesFeed.add(ChatBubbleRow.createSystemRow(Protocol.getCurrentTimestamp(), "Your nickname is now " + newNick));
         scrollToBottom();
     }
@@ -872,7 +935,8 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
 
     @Override
     public void onChatMessage(int messageId, String timestamp, String sender, String message) {
-        boolean isSelf = client.getCurrentNickname() != null && client.getCurrentNickname().equalsIgnoreCase(sender);
+        boolean isSelf = (client.getCurrentNickname() != null && client.getCurrentNickname().equalsIgnoreCase(sender))
+                || (sender != null && client.getCurrentStudentId() != null && sender.contains("(" + client.getCurrentStudentId() + ")"));
         int viewWidth = chatScrollPane.getViewport().getWidth();
         if (viewWidth <= 0) viewWidth = chatScrollPane.getWidth();
         int maxBubbleWidth = Math.max(160, (int) (viewWidth * 0.72));
@@ -944,12 +1008,15 @@ public class PeerDeskGUI extends JFrame implements PeerDeskClientListener {
 
         ticketTableModel.setRowCount(0);
         for (Ticket t : tickets) {
+            String requesterDisplay = (t.getPeerId() != null && !t.getPeerId().equalsIgnoreCase(t.getRequester()))
+                    ? t.getRequester() + " (" + t.getPeerId() + ")"
+                    : t.getRequester();
             ticketTableModel.addRow(new Object[]{
                     t.getId(),
                     t.getStatus().name(),
                     t.getCategory(),
                     t.getSubject(),
-                    t.getRequester(),
+                    requesterDisplay,
                     t.getHelper()
             });
         }

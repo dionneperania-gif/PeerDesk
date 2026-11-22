@@ -18,6 +18,7 @@ com\mycompany\peerdesk\client\ChangeStatusDialog$2.class
 com\mycompany\peerdesk\client\PeerDeskGUI$5.class
 com\mycompany\peerdesk\ui\PillButton.class
 com\mycompany\peerdesk\ui\PillTextField.class
+com\mycompany\peerdesk\client\PeerDeskGUI$10.class
 com\mycompany\peerdesk\model\Ticket$Status.class
 com\mycompany\peerdesk\test\SystemVerificationTest$TestClientListener.class
 com\mycompany\peerdesk\ui\WhimsicalDialog$1.class

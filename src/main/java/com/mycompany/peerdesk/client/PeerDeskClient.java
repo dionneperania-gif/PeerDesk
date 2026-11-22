@@ -33,6 +33,7 @@ public class PeerDeskClient {
     private volatile boolean connected = false;
     private final AtomicBoolean connecting = new AtomicBoolean(false);
     private String currentNickname;
+    private String currentStudentId;
     private final Object writeLock = new Object();
 
     private PeerDeskClientListener listener;
@@ -54,10 +55,21 @@ public class PeerDeskClient {
         return currentNickname;
     }
 
+    public String getCurrentStudentId() {
+        return currentStudentId;
+    }
+
     /**
      * Connects to the server asynchronously to prevent freezing the GUI.
      */
     public void connectAsync(String host, int port, String requestedNick) {
+        connectAsync(host, port, requestedNick, null);
+    }
+
+    /**
+     * Connects to the server asynchronously with both nickname and unique student ID.
+     */
+    public void connectAsync(String host, int port, String requestedNick, String requestedStudentId) {
         if (!connecting.compareAndSet(false, true)) return;
         new Thread(() -> {
             try {
@@ -68,16 +80,21 @@ public class PeerDeskClient {
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
                 out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
 
-                // Send initial handshake
-                sendRaw(Protocol.buildPacket(Protocol.CMD_CONNECT, requestedNick));
+                // Send initial handshake with nickname and optional student ID
+                if (requestedStudentId != null && !requestedStudentId.trim().isEmpty()) {
+                    sendRaw(Protocol.buildPacket(Protocol.CMD_CONNECT, requestedNick, requestedStudentId.trim()));
+                } else {
+                    sendRaw(Protocol.buildPacket(Protocol.CMD_CONNECT, requestedNick));
+                }
 
                 // Wait for initial handshake response synchronously on this background thread
                 String response;
                 while ((response = in.readLine()) != null) {
-                    String[] parts = response.split("\\|", 2);
+                    String[] parts = response.split("\\|", -1);
                     if (Protocol.RSP_AUTH_OK.equals(parts[0])) {
                         connected = true;
                         this.currentNickname = parts.length > 1 ? parts[1] : requestedNick;
+                        this.currentStudentId = parts.length > 2 ? parts[2] : (requestedStudentId != null ? requestedStudentId : this.currentNickname);
                         dispatch(() -> {
                             if (listener != null) listener.onConnected(currentNickname);
                         });

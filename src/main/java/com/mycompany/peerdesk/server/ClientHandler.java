@@ -26,6 +26,7 @@ public class ClientHandler implements Runnable {
     private BufferedReader in;
     private PrintWriter out;
     private String nickname;
+    private String studentId;
     private volatile boolean running = true;
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final Object writeLock = new Object();
@@ -41,6 +42,14 @@ public class ClientHandler implements Runnable {
 
     public void setNickname(String nickname) {
         this.nickname = nickname;
+    }
+
+    public String getStudentId() {
+        return studentId;
+    }
+
+    public void setStudentId(String studentId) {
+        this.studentId = studentId;
     }
 
     /**
@@ -93,25 +102,32 @@ public class ClientHandler implements Runnable {
      * Validates and completes initial client registration.
      */
     private boolean handleInitialHandshake(String line) {
-        String[] parts = line.split("\\|", 2);
+        String[] parts = line.split("\\|", -1);
         if (!Protocol.CMD_CONNECT.equals(parts[0]) || parts.length < 2) {
             sendMessage(Protocol.buildPacket(Protocol.RSP_AUTH_ERR, "Invalid handshake protocol."));
             return false;
         }
 
         String requestedNick = parts[1].trim();
-        String validationError = server.validateNickname(requestedNick);
+        String rawStudentId = (parts.length >= 3 && !parts[2].trim().isEmpty()) ? parts[2].trim() : null;
+        String requestedStudentId = (rawStudentId != null) ? PeerDeskServer.normalizeStudentId(rawStudentId) : null;
+
+        String validationError = server.validateRegistration(requestedNick, requestedStudentId);
         if (validationError != null) {
             sendMessage(Protocol.buildPacket(Protocol.RSP_AUTH_ERR, validationError));
             return false;
         }
 
         this.nickname = requestedNick;
-        sendMessage(Protocol.buildPacket(Protocol.RSP_AUTH_OK, this.nickname));
+        this.studentId = (requestedStudentId != null) ? requestedStudentId : requestedNick;
+        sendMessage(Protocol.buildPacket(Protocol.RSP_AUTH_OK, this.nickname, this.studentId));
         server.registerClient(this);
 
         // Announce user joined
-        server.broadcastSystemMessage(this.nickname + " joined PeerDesk!");
+        String joinDisplayName = (this.studentId != null && !this.studentId.equalsIgnoreCase(this.nickname))
+                ? this.nickname + " (" + this.studentId + ")"
+                : this.nickname;
+        server.broadcastSystemMessage(joinDisplayName + " joined PeerDesk!");
         server.broadcastUserList();
         server.syncTicketsToClient(this);
         server.syncChatHistoryToClient(this);
@@ -133,7 +149,10 @@ public class ClientHandler implements Runnable {
                         sendMessage(Protocol.buildPacket(Protocol.RSP_SERVER_ERR,
                                 "Message too long (max " + Protocol.MAX_MESSAGE_LENGTH + " characters)."));
                     } else if (!chatText.isEmpty()) {
-                        server.broadcastChatMessage(this.nickname, chatText);
+                        String sender = (this.studentId != null && !this.studentId.equalsIgnoreCase(this.nickname))
+                                ? this.nickname + " (" + this.studentId + ")"
+                                : this.nickname;
+                        server.broadcastChatMessage(sender, chatText);
                     }
                 }
                 break;
@@ -161,7 +180,7 @@ public class ClientHandler implements Runnable {
                     String subject = parts[2].trim();
                     String customRequester = (parts.length >= 4 && !parts[3].trim().isEmpty()) ? parts[3].trim() : this.nickname;
                     if (!category.isEmpty() && !subject.isEmpty()) {
-                        server.createTicket(this.nickname, customRequester, category, subject);
+                        server.createTicket(this.studentId != null ? this.studentId : this.nickname, customRequester, category, subject);
                     } else {
                         sendMessage(Protocol.buildPacket(Protocol.RSP_SERVER_ERR, "Ticket category and subject cannot be blank."));
                     }
@@ -207,7 +226,7 @@ public class ClientHandler implements Runnable {
                 if (parts.length >= 2) {
                     try {
                         int ticketId = Integer.parseInt(parts[1]);
-                        server.deleteTicket(ticketId, this.nickname);
+                        server.deleteTicket(ticketId, this.studentId != null ? this.studentId : this.nickname, this.nickname);
                     } catch (NumberFormatException e) {
                         sendMessage(Protocol.buildPacket(Protocol.RSP_SERVER_ERR, "Invalid ticket ID format."));
                     }
@@ -249,7 +268,7 @@ public class ClientHandler implements Runnable {
     }
 
     private void handleNameChange(String newNick) {
-        String validationError = server.validateNickname(newNick);
+        String validationError = server.validateNicknameFormat(newNick);
         if (validationError != null) {
             sendMessage(Protocol.buildPacket(Protocol.RSP_NAME_ERR, validationError));
             return;
@@ -257,8 +276,13 @@ public class ClientHandler implements Runnable {
 
         String oldNick = this.nickname;
         this.nickname = newNick;
+        if (this.studentId != null) {
+            server.updateStudentName(this.studentId, newNick);
+        }
         sendMessage(Protocol.buildPacket(Protocol.RSP_NAME_OK, newNick));
-        server.broadcastSystemMessage(oldNick + " renamed themselves to " + newNick);
+        String oldDisplay = (this.studentId != null && !this.studentId.equalsIgnoreCase(oldNick)) ? oldNick + " (" + this.studentId + ")" : oldNick;
+        String newDisplay = (this.studentId != null && !this.studentId.equalsIgnoreCase(newNick)) ? newNick + " (" + this.studentId + ")" : newNick;
+        server.broadcastSystemMessage(oldDisplay + " renamed themselves to " + newDisplay);
         server.broadcastUserList();
         server.syncTicketsToClient(this);
     }
@@ -284,7 +308,10 @@ public class ClientHandler implements Runnable {
         if (nickname != null) {
             server.unregisterClient(this);
             if (server.isRunning()) {
-                server.broadcastSystemMessage(nickname + " left PeerDesk.");
+                String leftDisplay = (this.studentId != null && !this.studentId.equalsIgnoreCase(nickname))
+                        ? nickname + " (" + this.studentId + ")"
+                        : nickname;
+                server.broadcastSystemMessage(leftDisplay + " left PeerDesk.");
                 server.broadcastUserList();
             }
         }

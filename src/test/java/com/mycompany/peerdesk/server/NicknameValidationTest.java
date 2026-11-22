@@ -95,4 +95,58 @@ public class NicknameValidationTest {
     void testValidNicknameWithUnderscore() {
         assertNull(server.validateNickname("my_name"));
     }
+
+    @Test
+    void testStudentIdValidNumbersAndSymbols() {
+        assertNull(server.validateStudentId("2025-1124"));
+        assertNull(server.validateStudentId("12345678")); // normalized to 1234-5678
+        assertNull(server.validateStudentId("2024-0001"));
+    }
+
+    @Test
+    void testStudentIdRejectsNon8Digits() {
+        assertNotNull(server.validateStudentId("2024-01"));
+        assertNotNull(server.validateStudentId("12345"));
+        assertNotNull(server.validateStudentId("2025-11245"));
+    }
+
+    @Test
+    void testStudentIdRejectsLetters() {
+        assertNotNull(server.validateStudentId("2025-A124"));
+        assertNotNull(server.validateStudentId("Student123"));
+        assertNotNull(server.validateStudentId("abc"));
+    }
+
+    @Test
+    void testStudentIdRejectsDelimiters() {
+        assertNotNull(server.validateStudentId("2025|1124"));
+        assertNotNull(server.validateStudentId("2025~1124"));
+        assertNotNull(server.validateStudentId("2025@1124"));
+        assertNotNull(server.validateStudentId("2025,1124"));
+    }
+
+    @Test
+    void testStudentIdBlankFails() {
+        assertNotNull(server.validateStudentId(""));
+        assertNotNull(server.validateStudentId("   "));
+        assertNotNull(server.validateStudentId(null));
+    }
+
+    @Test
+    void testRegistrationWithSameNameDifferentStudentIdAllowed() {
+        assertNull(server.validateRegistration("Alex", "2025-1124"));
+        assertNull(server.validateRegistration("Alex", "2025-5678"));
+    }
+
+    @Test
+    void testRegistrationNameMismatchFails() {
+        // First registration registers Alex with 2025-9999
+        assertNull(server.validateRegistration("Alex", "2025-9999"));
+        // Second sign-in with same name & ID succeeds
+        assertNull(server.validateRegistration("Alex", "2025-9999"));
+        // Sign-in with DIFFERENT name for same student ID must fail!
+        String error = server.validateRegistration("John", "2025-9999");
+        assertNotNull(error);
+        assertTrue(error.contains("Wrong Name or Student ID"), "Error should explain name mismatch: " + error);
+    }
 }
