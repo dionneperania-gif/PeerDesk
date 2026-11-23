@@ -179,6 +179,14 @@ All network communication uses a clean, pipe-delimited (`|`) UTF-8 text protocol
 | `/help` | Display a list of all available commands inside the chat window |
 | `/exit` | Gracefully disconnect from the server and close the client |
 
+### E. Troubleshooting
+
+| Issue | Cause | Solution |
+|:---|:---|:---|
+| `Address already in use: bind` | Port 8888 is occupied by a previously running server process | Close existing server instance, run `free_port_8888.bat`, or specify another port |
+| Connection refused on LAN | Host firewall blocking incoming connection or server not started | Allow Java through Windows Firewall on Private Networks and verify the host LAN IP |
+| Duplicate nickname rejected | Another connected peer is using the same display name | Enter a different, unique nickname on the login prompt |
+
 ---
 
 ## 🧪 7. Test Results
