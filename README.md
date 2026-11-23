@@ -1,6 +1,6 @@
 # PeerDesk — Student LAN Collaboration & Peer Help Desk
 
-A multithreaded Java LAN chat application designed for student study groups, lab classrooms, and peer tutoring. Built with Java Sockets (`java.net`), multithreading, and a modern Swing GUI styled in a calming **Pastel Pink & Pastel Green** aesthetic.
+A multithreaded Java LAN chat application designed for student study groups, lab classrooms, and peer tutoring. Built with Java Sockets (`java.net`), multithreading, and a modern Swing GUI styled with an **earthy, botanical feel** to provide a relaxed study atmosphere.
 
 ---
 
