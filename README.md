@@ -258,15 +258,30 @@ ALL 8 SYSTEM VERIFICATION TESTS PASSED SUCCESSFULLY! 100% COMPLIANT WITH RUBRIC.
 
 ## 👥 7. Pair Contribution Log
 
-| Date | Partner | Task / Contribution | Status / Commit |
-| :--- | :--- | :--- | :--- |
-| Nov 20, 2026 | Dionne Mariz Perania | Server socket architecture, `ClientHandler` thread pool, synchronization locks | Completed |
-| Nov 20, 2026 | Charl Lee Basisto | Message protocol definition, `Protocol.java`, unique nickname validation logic | Completed |
-| Nov 20, 2026 | Dionne Mariz Perania | Original Feature 1: Help ticket data model & real-time server ticket sync | Completed |
-| Nov 20, 2026 | Charl Lee Basisto | Original Feature 2: Helper claim & resolution workflow state management | Completed |
-| Nov 20, 2026 | Dionne Mariz Perania | Swing Client GUI implementation with Pastel Pink & Pastel Green visual styling | Completed |
-| Nov 20, 2026 | Charl Lee Basisto | Client network reader, thread-safe EDT dispatching (`SwingUtilities.invokeLater`) | Completed |
-| Nov 20, 2026 | Both | 3-client concurrent testing, LAN multi-computer testing, documentation | Verified |
+### Actual Git Commit History
+
+All commits recorded in the repository history, verified against GitHub:
+
+| Date | Author / Partner | Commit Hash | Summary / Contribution |
+| :--- | :--- | :---: | :--- |
+| Nov 21, 2026 | Dionne Mariz Perania | `c3ed2cc` | Initial commit of complete PeerDesk client and server codebase |
+| Nov 21, 2026 | Dionne Mariz Perania | `8fc9076` | Initial README documentation and project structure |
+| Nov 21, 2026 | Dionne Mariz Perania | `46fca6c` | Bugfix: resolved server shutdown lag and clean thread exit handling |
+| Nov 21, 2026 | Dionne Mariz Perania | `dea7525` | UI improvement: disable action buttons until active server connection |
+| Nov 21, 2026 | Dionne Mariz Perania | `727595c` | Feature: clickable ticket mentions in chat with instant "Offer Help" action |
+| Nov 21, 2026 | Dionne Mariz Perania | `ff51069` | Feature: automatic ticket creation broadcast alerts directly to chat feed |
+| Nov 21, 2026 | Dionne Mariz Perania | `619576d` | Feature: activity status badges beside peer names (Needs Help / Helping / Free) |
+| Nov 22, 2026 | Dionne Mariz Perania | `0ef539f` | Security & ID: added Student ID and student name binding |
+| Nov 22, 2026 | Dionne Mariz Perania | `7090da8` | Requester tracking: enforce ticket ownership by requester nickname |
+| Nov 22, 2026 | Dionne Mariz Perania | `a589f96` | Major feature: ticket ratings, requester-only delete/resolve permissions with ID verification |
+| Nov 24, 2026 | Dionne Mariz Perania | `fb489a0` | Documentation: update course info, 8-case test table, commands, and `.gitignore` |
+
+### Division of Responsibilities
+
+| Partner | Role & Responsibilities |
+| :--- | :--- |
+| **Dionne Mariz Perania** | Core server architecture, multithreaded socket handling, Swing GUI visual design (pastel cards, bubbles), ticket rating system, Student ID validation, and repository management. |
+| **Charl Lee Basisto** | Protocol testing, peer connection verification, LAN collaborative testing, scenario validation, and defense demonstration preparation. |
 
 ---
 
