@@ -281,22 +281,4 @@ All commits recorded in the repository history, verified against GitHub:
 | Partner | Role & Responsibilities |
 | :--- | :--- |
 | **Dionne Mariz Perania** | Core server architecture, multithreaded socket handling, Swing GUI visual design (pastel cards, bubbles), ticket rating system, Student ID validation, and repository management. |
-| **Charl Lee Basisto** | Protocol testing, peer connection verification, LAN collaborative testing, scenario validation, and defense demonstration preparation. |
-
----
-
-## 🎓 8. Oral Defense & Demonstration Guide
-
-During your presentation, be prepared to answer:
-
-1. **How do messages travel from one client to another?**
-   * *Answer*: When a client types a message and clicks Send, `PeerDeskClient` formats it as `CHAT|<msg>` and writes it to the socket. The server's `ClientHandler` reads it in its loop, calls `server.broadcastChatMessage()`, which iterates over the `clients` list and writes `CHAT_MSG|<time>|<sender>|<msg>` to each client socket. Each client's reader thread receives it and queues a GUI update via `SwingUtilities.invokeLater()`.
-
-2. **Why doesn't the GUI freeze while waiting for network messages?**
-   * *Answer*: All blocking socket calls (`socket.connect()` and `in.readLine()`) run in separate background threads (`Client-Reader`). Swing's Event Dispatch Thread (EDT) only handles UI rendering and button clicks, so it remains 100% responsive at all times.
-
-3. **How is thread safety and concurrent sending handled?**
-   * *Answer*:
-     * Connected clients are stored in a thread-safe `CopyOnWriteArrayList`.
-     * Shared tickets are wrapped in `Collections.synchronizedList`.
-     * `PrintWriter.println()` writes on each socket are guarded by a `synchronized(writeLock)` block so two threads cannot interleave bytes on the same TCP stream.
+| **Charl Lee Basisto** | Protocol testing, peer connection verification, LAN collaborative testing, scenario validation, and project verification. |
