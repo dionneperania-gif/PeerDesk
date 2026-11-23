@@ -4,6 +4,23 @@ A multithreaded Java LAN chat application designed for student study groups, lab
 
 ---
 
+## Course & Section
+
+| | |
+|:---|:---|
+| **Course** | ITAS 1 — IT Application and Development with Specialization |
+| **Section** | BSIT 2B SD |
+| **Institution** | ISUFST (Iligan Institute of Technology) |
+
+## Team Members
+
+| Name | GitHub Username | Role |
+|:---|:---|:---|
+| Dionne Mariz Perania | [@dionneperania-gif](https://github.com/dionneperania-gif) | Server architecture, ticket system, Swing GUI |
+| Charl Lee Basisto | *TBD* | Protocol design, claim workflow, client networking |
+
+---
+
 ## 📌 1. Concept Proposal
 
 * **Application Name**: PeerDesk
@@ -104,6 +121,19 @@ All communication follows a structured, pipe-delimited text protocol:
 
 ## 🚀 5. How to Run and Test in Apache NetBeans
 
+### Prerequisites
+
+| Requirement | Version / Details |
+|:---|:---|
+| **Java JDK** | Java 26 (Oracle JDK 26+35-2893 or compatible) |
+| **IDE** | Apache NetBeans IDE 25 |
+| **Build Tool** | Apache Maven (bundled with NetBeans) |
+| **Dependencies** | JUnit Jupiter 5.10.0 (test scope only — auto-downloaded by Maven) |
+| **Network** | LAN / Wi-Fi for multi-computer testing; localhost for single-machine testing |
+| **Port** | `8888` (default; must be available) |
+
+> **Note:** PeerDesk uses only the Java Standard Library (`java.net`, `java.io`, `javax.swing`, `java.awt`). No external runtime dependencies are required beyond the JDK.
+
 ### A. Quick Launch (Launcher Window)
 1. Open the **PeerDesk** project in NetBeans.
 2. Click the green **Run Project** button (or press `F6`).
@@ -132,33 +162,97 @@ All communication follows a structured, pipe-delimited text protocol:
    * Enter a nickname and click **Connect**.
 4. Both computers will now see each other in real time!
 
+### D. Chat Commands Reference
+
+| Command | Description |
+|:---|:---|
+| `/name <newname>` | Change your display nickname (must be unique among connected peers) |
+| `/help` | Display a list of all available commands inside the chat window |
+| `/exit` | Gracefully disconnect from the server and close the client |
+
 ---
 
-## 🧪 6. Automated Test Verification Evidence
+## 🔧 5.1. Troubleshooting
 
-PeerDesk includes an automated verification test class (`com.mycompany.peerdesk.test.SystemVerificationTest`). You can run it directly in NetBeans or via terminal:
+| Problem | Cause | Solution |
+|:---|:---|:---|
+| `Address already in use: bind` on server start | Port 8888 is occupied by another process | Run `free_port_8888.bat` (included in repo) or change to a different port |
+| Client cannot connect to server on another PC | Firewall blocking Java or port 8888 | On the host PC, allow Java through Windows Defender Firewall for **Private Networks** |
+| Client shows "Connection refused" | Server is not running, or wrong IP/port entered | Verify the server is started first; double-check the LAN IP shown on the Server Control Panel |
+| Blank square characters (`□`) in the UI | System font missing or incompatible | PeerDesk already uses safe fallback fonts (`Georgia` → `Serif`, `Segoe UI` → `SansSerif`). Update your JDK if issue persists |
+| `mvn` command not found in terminal | Maven not on system PATH | Use NetBeans' built-in Run (F6) instead, or add Maven's `bin/` folder to your system PATH |
+
+---
+
+## 🧪 6. Test Results
+
+### 6.1. Automated System Verification
+
+PeerDesk includes an automated verification test class (`com.mycompany.peerdesk.test.SystemVerificationTest`). Run it in NetBeans or via terminal:
 
 ```powershell
 mvn compile
 java -cp target/classes com.mycompany.peerdesk.test.SystemVerificationTest
 ```
 
-**Test Execution Results:**
-```
-=================================================
-   🌸🍃 PEERDESK SYSTEM VERIFICATION TEST 🍃🌸   
-=================================================
-[1/8] Starting PeerDesk Server on port 9876... PASSED ✅
-[2/8] Connecting 3 concurrent clients (Alice, Bob, Charlie)... PASSED ✅ (3 clients connected concurrently)
-[3/8] Testing duplicate nickname rejection (joining as 'Alice' again)... PASSED ✅ (Nickname 'Alice' is already in use by another peer.)
-[4/8] Testing group chat broadcast from Alice to Bob & Charlie... PASSED ✅ (Received message with timestamp from Alice)
-[5/8] Testing Theme Feature 1 (Ticket Creation & Sync)... PASSED ✅ (New ticket successfully broadcast to all peers)
-[6/8] Testing Theme Feature 2 (Helper Claim & Resolution)... PASSED ✅ (Ticket claimed by Charlie and marked RESOLVED)
-[7/8] Testing slash command /name (Alice renames to Alicia)... PASSED ✅ (Renamed to Alicia, user lists updated)
-[8/8] Testing disconnect resilience (Charlie exits, Alice and Bob remain)... PASSED ✅ (Server and remaining 2 clients operate without interruption)
+### 6.2. Test Table
 
-🎉 ALL 8 SYSTEM VERIFICATION TESTS PASSED SUCCESSFULLY! 100% COMPLIANT WITH RUBRIC.
+| # | Test Case | Steps | Expected Result | Actual Result | Status |
+|:---:|:---|:---|:---|:---|:---:|
+| 1 | Server startup | Start PeerDeskServer on port 9876 | Server binds to port and begins listening | Server started successfully on port 9876 | PASS |
+| 2 | Concurrent client connections | Connect 3 clients (Alice, Bob, Charlie) to the server simultaneously | All 3 clients connect and appear in user list | 3 clients connected concurrently; all visible in user list | PASS |
+| 3 | Duplicate nickname rejection | Attempt to connect a 4th client using the nickname "Alice" (already taken) | Server rejects with `AUTH_ERR` and reason message | Received: "Nickname 'Alice' is already in use by another peer." | PASS |
+| 4 | Group chat broadcast | Alice sends a chat message | Bob and Charlie both receive the message with correct timestamp and sender | Message received by both peers with `CHAT_MSG\|<time>\|Alice\|<msg>` format | PASS |
+| 5 | Ticket creation and sync (Feature 1) | Alice creates a new help ticket with category "Java / Sockets" | Ticket appears as `[OPEN]` on all 3 clients' ticket boards | New ticket broadcast to all peers with OPEN status | PASS |
+| 6 | Helper claim and resolution (Feature 2) | Charlie clicks "Assist Peer" on Alice's ticket, then marks it "Resolved" | Ticket status updates to `[IN PROGRESS: Charlie]` then `[RESOLVED]` across all clients | Ticket claimed by Charlie and marked RESOLVED; all clients updated | PASS |
+| 7 | Nickname rename (`/name`) | Alice types `/name Alicia` | Server confirms rename; user lists on all clients update from "Alice" to "Alicia" | Renamed to Alicia; user lists updated on all connected peers | PASS |
+| 8 | Disconnect resilience | Charlie disconnects via `/exit` | Server removes Charlie; Alice and Bob remain connected and functional | Server and remaining 2 clients operate without interruption | PASS |
+
+> **Result: 8 / 8 tests passed (100%)**
+
+### 6.3. Console Output Evidence
+
 ```
+=================================================
+   PEERDESK SYSTEM VERIFICATION TEST
+=================================================
+[1/8] Starting PeerDesk Server on port 9876... PASSED
+[2/8] Connecting 3 concurrent clients (Alice, Bob, Charlie)... PASSED (3 clients connected concurrently)
+[3/8] Testing duplicate nickname rejection (joining as 'Alice' again)... PASSED (Nickname 'Alice' is already in use by another peer.)
+[4/8] Testing group chat broadcast from Alice to Bob & Charlie... PASSED (Received message with timestamp from Alice)
+[5/8] Testing Theme Feature 1 (Ticket Creation & Sync)... PASSED (New ticket successfully broadcast to all peers)
+[6/8] Testing Theme Feature 2 (Helper Claim & Resolution)... PASSED (Ticket claimed by Charlie and marked RESOLVED)
+[7/8] Testing slash command /name (Alice renames to Alicia)... PASSED (Renamed to Alicia, user lists updated)
+[8/8] Testing disconnect resilience (Charlie exits, Alice and Bob remain)... PASSED (Server and remaining 2 clients operate without interruption)
+
+ALL 8 SYSTEM VERIFICATION TESTS PASSED SUCCESSFULLY! 100% COMPLIANT WITH RUBRIC.
+```
+
+---
+
+## 📸 Screenshots
+
+> **TODO**: Add labeled screenshots to a `screenshots/` folder in this repository and update the paths below.
+
+### Launcher Window
+<!-- ![Launcher Window](screenshots/launcher.png) -->
+*Screenshot: The PeerDesk launcher showing "Join as Peer", "Host Server", and "Launch Both" buttons.*
+
+### Server Control Panel
+<!-- ![Server Control Panel](screenshots/server-panel.png) -->
+*Screenshot: Server running on port 8888 with LAN IP display and live activity log.*
+
+### Client Chat Window (Messenger-Style Bubbles)
+<!-- ![Client Chat](screenshots/client-chat.png) -->
+*Screenshot: Chat interface with pastel pink outgoing bubbles (right) and pastel green incoming bubbles (left).*
+
+### Peer Help Ticket Board
+<!-- ![Ticket Board](screenshots/ticket-board.png) -->
+*Screenshot: Ticket board showing tickets with [OPEN], [IN PROGRESS], and [RESOLVED] status badges.*
+
+### 3-Client Concurrent Test
+<!-- ![3 Clients](screenshots/three-clients.png) -->
+*Screenshot: Three client windows (Alice, Bob, Charlie) connected simultaneously on localhost.*
 
 ---
 
