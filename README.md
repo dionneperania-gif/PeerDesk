@@ -29,7 +29,7 @@ A multithreaded Java LAN chat application designed for student study groups, lab
 * **Target Audience**: Classmates, student pairs, and lab partners working simultaneously on technical programming problems, debugging exercises, and team deliverables.
 * **Concept Proposal & Approval**:
   * Proposal: A dual-purpose LAN workspace pairing real-time instant messaging with an integrated, synchronized ticket desk where students can seek, provide, and track peer technical assistance.
-  * Status: `[ Approved ]`
+  * Status: `[ Pending Approval ]`
 
 ---
 
@@ -71,93 +71,64 @@ PeerDesk solves these classroom bottlenecks by separating the discussion into tw
 
 ---
 
-## 🎨 4. User Interface & Visual Styling
-
-The interface features a **clean, modern, pastel-styled workspace**:
-* **Full-Window Background**:
-  * Rendered via custom Java2D anti-aliased painting (`BotanicalBackgroundPanel.java`).
-  * Features a multi-stop diagonal gradient from **soft blush pink (`#FFD6E0`)** to **warm peach (`#FFE5D9`)**, **warm cream (`#FDFBF7`)**, and **soft sage mint (`#D8F3DC`)**.
-* **Floating Content Cards (`EditorialCardPanel.java`)**:
-  * Large rounded corners ($R = 24\text{px}$) with warm ivory/cream fill (`#FFFDF9`) and soft translucent drop shadows.
-  * No default gray Swing components anywhere in the application.
-* **Messenger & Instagram DM Style Message Bubbles (`ChatBubbleRow.java`)**:
-  * **Outgoing / My Own Messages**: Compact rounded bubbles aligned to the **RIGHT** in soft blush pink (`#FFE6EC`) with deep rose text (`#9E2A4B`).
-  * **Incoming Messages**: Compact rounded bubbles aligned to the **LEFT** in pale mint/sage green (`#E8F5E9`) with dark forest sage text (`#1B4332`), displaying the sender nickname clearly above the bubble in bold (`#2D6A4F`).
-  * **Dynamic Sizing & Text Wrapping**: Short messages ("hi", "ok") render as small, compact bubbles; longer messages wrap naturally into multiple lines capped at a maximum of ~70% width of the chat feed.
-  * **Discreet Timestamps**: Subtle timestamps (`[HH:mm:ss]`) integrated cleanly at the bottom of each bubble.
-  * **Subtle System Announcements**: Join, leave, rename, and ticket notifications render as centered, italicized text notices rather than bulky message boxes.
-  * **Smooth Continuous Feed & Auto-Scroll**: Vertically stacked `JPanel` conversation feed inside `JScrollPane` that auto-scrolls to the newest message upon arrival while allowing uninterrupted scrolling to older messages.
-  * **Fixed Bottom Composer**: Wide rounded input field (`PillTextField`) with Enter-to-send and a dedicated Send button, remaining fixed at the bottom while the message feed scrolls independently.
-* **Filled Pill Buttons & Fields (`PillButton.java`, `PillTextField.java`)**:
-  * Smooth pill-shaped buttons with solid filled pastel backgrounds (Bubblegum Pink, Sage Green, Soft Mint) and hover highlights.
-  * Rounded text fields with filled white/ivory backgrounds, soft interior padding, and blush pink focus glows.
-* **Typography & Clean Rendering (Zero Broken Square '□' Glyphs)**:
-  * Robust font detection in `BotanicalTheme.java` checking system font availability (`Georgia` fallback to `Serif`, `Segoe UI` fallback to `Arial` / `SansSerif`).
-  * Strict typographic hierarchy:
-    * **Main Display Titles**: `Georgia` Bold, 26px
-    * **Section Headings**: `Georgia` Bold, 18px
-    * **Button Text**: `Segoe UI` Bold, 14px
-    * **Chat Messages**: `Segoe UI` Regular, 14px (with 1.4 line-height and comfortable bubble padding)
-    * **Input Fields**: `Segoe UI` Regular, 14px
-    * **Small Labels & Badges**: `Segoe UI` Bold, 12px
-    * **Timestamps**: `Segoe UI` Regular, 11px
-  * **100% Free of Unsupported Emojis**: All emojis and unsupported Unicode characters across titles, buttons, status badges, chat templates, and network broadcasts have been replaced with elegant text indicators (`[ONLINE]`, `[OFFLINE]`, `[ACTIVE]`, `[STOPPED]`, `+ New Ticket`, `Assist Peer`, `Mark Resolved`, `Remove`), ensuring zero square (`□`) rendering bugs on any OS or machine.
-
----
-
-## 🌐 5. Network Architecture & Threading Model
+## 🌐 4. Architecture Diagram & Network Model
 
 ```
-[ PeerDesk Client 1 ] <--- TCP Socket ---> \
-[ PeerDesk Client 2 ] <--- TCP Socket ---> --- [ PeerDesk Server:8888 ]
-[ PeerDesk Client 3 ] <--- TCP Socket ---> /      (ClientHandler Threads & Concurrent State)
++--------------------------------------------------------------------------+
+|                        PEERDESK LAN ARCHITECTURE                         |
++--------------------------------------------------------------------------+
+
+   [ PeerDesk Client 1 ]           [ PeerDesk Client 2 ]       [ PeerDesk Client 3 ]
+   (Swing UI + Reader Thread)     (Swing UI + Reader Thread)   (Swing UI + Reader Thread)
+              ^                               ^                            ^
+              |                               |                            |
+              +-------------------------------+----------------------------+
+                                              |
+                                      TCP Socket (Port 8888)
+                                              |
+                                              v
+                              +-------------------------------+
+                              |       PeerDesk Server         |
+                              |-------------------------------|
+                              | * ServerSocket (Port 8888)    |
+                              | * CachedThreadPool Executor   |
+                              | * ClientHandler per peer      |
+                              | * CopyOnWriteArrayList Clients|
+                              | * Synchronized Ticket Store   |
+                              +-------------------------------+
 ```
 
-1. **Server (`PeerDeskServer.java`)**:
-   * Uses `ServerSocket` running on a configurable port (default: `8888`).
-   * Spawns an `ExecutorService` thread pool to manage an independent `ClientHandler` thread for each connected peer.
-   * Maintains thread-safe collections (`CopyOnWriteArrayList` for clients, `Collections.synchronizedList` for tickets).
-   * Validates non-blank, unique nicknames before admitting clients.
-   * Safely broadcasts group chat messages and state updates without blocking.
-
-2. **Client Handler (`ClientHandler.java`)**:
-   * Reads incoming client messages on a background loop using UTF-8 `BufferedReader`.
-   * Employs a synchronized `writeLock` around the `PrintWriter` to prevent interleaved, corrupt packets during simultaneous socket writes.
-   * Releases sockets, streams, and unregisters cleanly when a client exits or disconnects.
-
-3. **Client Network Controller (`PeerDeskClient.java`)**:
-   * All network I/O runs completely off the GUI thread to ensure zero UI freezing.
-   * Uses a dedicated background `Client-Reader` thread.
-   * Dispatches all incoming events (`onChatMessage`, `onUserListUpdated`, `onTicketListUpdated`) to the Swing **Event Dispatch Thread (EDT)** using `SwingUtilities.invokeLater(...)`.
+* **Client Architecture**: All network reads run on an independent background `Client-Reader` thread. Socket events are forwarded to the Swing Event Dispatch Thread (EDT) via `SwingUtilities.invokeLater()` to prevent UI freezing.
+* **Server Architecture**: Listens on TCP port `8888`. Spawns a dedicated `ClientHandler` thread per connection. Socket writes use synchronized thread locks to guarantee packet integrity across concurrent broadcasts.
 
 ---
 
-## 📡 6. Message Protocol Specification
+## 📡 5. Message Protocol & Packet Format
 
-All communication follows a structured, pipe-delimited text protocol:
+All network communication uses a clean, pipe-delimited (`|`) UTF-8 text protocol:
 
-| Command / Packet | Direction | Parameters / Description |
-| :--- | :--- | :--- |
-| `CONNECT\|<nick>` | Client $\rightarrow$ Server | Initial registration request with requested nickname |
-| `AUTH_OK\|<assignedNick>` | Server $\rightarrow$ Client | Registration successful; informs client of its active nickname |
-| `AUTH_ERR\|<reason>` | Server $\rightarrow$ Client | Handshake failed (e.g., nickname blank or already in use) |
-| `CHAT\|<message>` | Client $\rightarrow$ Server | Chat message to broadcast to all peers |
-| `CHAT_MSG\|<time>\|<sender>\|<msg>` | Server $\rightarrow$ All | Broadcasts chat message with timestamp and sender nickname |
-| `SYS_MSG\|<time>\|<message>` | Server $\rightarrow$ All | Broadcasts announcements (joins, leaves, renames, ticket updates) |
-| `USER_LIST\|<nick1>,<nick2>,...` | Server $\rightarrow$ All | Sends comma-separated list of currently connected peers |
-| `NAME\|<newNick>` | Client $\rightarrow$ Server | Triggered by `/name <newname>` command |
-| `NAME_OK\|<newNick>` | Server $\rightarrow$ Client | Confirms nickname successfully updated |
-| `NAME_ERR\|<reason>` | Server $\rightarrow$ Client | Rejects nickname change (e.g., duplicate nickname) |
-| `EXIT` | Client $\rightarrow$ Server | Triggered by `/exit` or window close; closes connection |
-| `TICKET_NEW\|<cat>\|<subject>` | Client $\rightarrow$ Server | Creates a new help ticket in category with subject |
-| `TICKET_CLAIM\|<id>` | Client $\rightarrow$ Server | Assigns active client as the helper for ticket `<id>` |
-| `TICKET_RESOLVE\|<id>` | Client $\rightarrow$ Server | Marks ticket `<id>` as `RESOLVED` |
-| `TICKET_DELETE\|<id>` | Client $\rightarrow$ Server | Removes ticket `<id>` from the board |
-| `TICKET_LIST\|<ticket1>@@...` | Server $\rightarrow$ All | Broadcasts serialized list of all tickets across the LAN |
+| Packet / Command | Direction | Format & Description |
+| :--- | :---: | :--- |
+| `CONNECT` | Client $\rightarrow$ Server | `CONNECT\|<nickname>` — Request to join the session |
+| `AUTH_OK` | Server $\rightarrow$ Client | `AUTH_OK\|<assignedNick>` — Connection accepted |
+| `AUTH_ERR` | Server $\rightarrow$ Client | `AUTH_ERR\|<reason>` — Connection rejected (duplicate or invalid name) |
+| `CHAT` | Client $\rightarrow$ Server | `CHAT\|<message>` — Send chat message to be broadcasted |
+| `CHAT_MSG` | Server $\rightarrow$ All | `CHAT_MSG\|<timestamp>\|<sender>\|<message>` — Broadcast chat message |
+| `SYS_MSG` | Server $\rightarrow$ All | `SYS_MSG\|<timestamp>\|<message>` — System notice (join, leave, ticket alerts) |
+| `USER_LIST` | Server $\rightarrow$ All | `USER_LIST\|<nick1>,<nick2>,...` — Live list of connected peers |
+| `NAME` | Client $\rightarrow$ Server | `NAME\|<newNickname>` — Request nickname change |
+| `NAME_OK` | Server $\rightarrow$ Client | `NAME_OK\|<newNickname>` — Confirm nickname change |
+| `NAME_ERR` | Server $\rightarrow$ Client | `NAME_ERR\|<reason>` — Reject nickname change |
+| `EXIT` | Client $\rightarrow$ Server | `EXIT` — Request graceful disconnection |
+| `TICKET_NEW` | Client $\rightarrow$ Server | `TICKET_NEW\|<category>\|<subject>` — Create new help ticket |
+| `TICKET_CLAIM` | Client $\rightarrow$ Server | `TICKET_CLAIM\|<ticketId>` — Volunteer to assist peer on ticket |
+| `TICKET_RESOLVE` | Client $\rightarrow$ Server | `TICKET_RESOLVE\|<ticketId>` — Mark ticket as resolved |
+| `TICKET_DELETE` | Client $\rightarrow$ Server | `TICKET_DELETE\|<ticketId>` — Remove ticket from board |
+| `TICKET_LIST` | Server $\rightarrow$ All | `TICKET_LIST\|<t1>@@<t2>@@...` — Synchronize full ticket board state |
 
 ---
 
-## 🚀 7. How to Run and Test in Apache NetBeans
+## 🚀 6. How to Run and Test in Apache NetBeans
 
 ### Prerequisites
 
