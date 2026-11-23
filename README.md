@@ -205,8 +205,6 @@ java -cp target/classes com.mycompany.peerdesk.test.SystemVerificationTest
 | 7 | Nickname rename (`/name`) | Alice types `/name Alicia` | Server confirms rename; user lists on all clients update from "Alice" to "Alicia" | Renamed to Alicia; user lists updated on all connected peers | PASS |
 | 8 | Disconnect resilience | Charlie disconnects via `/exit` | Server removes Charlie; Alice and Bob remain connected and functional | Server and remaining 2 clients operate without interruption | PASS |
 
-> **Result: 8 / 8 tests passed (100%)**
-
 ### 7.3. Console Output Evidence
 
 ```
@@ -214,15 +212,13 @@ java -cp target/classes com.mycompany.peerdesk.test.SystemVerificationTest
    PEERDESK SYSTEM VERIFICATION TEST
 =================================================
 [1/8] Starting PeerDesk Server on port 9876... PASSED
-[2/8] Connecting 3 concurrent clients (Alice, Bob, Charlie)... PASSED (3 clients connected concurrently)
-[3/8] Testing duplicate nickname rejection (joining as 'Alice' again)... PASSED (Nickname 'Alice' is already in use by another peer.)
-[4/8] Testing group chat broadcast from Alice to Bob & Charlie... PASSED (Received message with timestamp from Alice)
-[5/8] Testing Theme Feature 1 (Ticket Creation & Sync)... PASSED (New ticket successfully broadcast to all peers)
-[6/8] Testing Theme Feature 2 (Helper Claim & Resolution)... PASSED (Ticket claimed by Charlie and marked RESOLVED)
-[7/8] Testing slash command /name (Alice renames to Alicia)... PASSED (Renamed to Alicia, user lists updated)
-[8/8] Testing disconnect resilience (Charlie exits, Alice and Bob remain)... PASSED (Server and remaining 2 clients operate without interruption)
-
-ALL 8 SYSTEM VERIFICATION TESTS PASSED SUCCESSFULLY! 100% COMPLIANT WITH RUBRIC.
+[2/8] Connecting 3 concurrent clients (Alice, Bob, Charlie)... PASSED
+[3/8] Testing duplicate nickname rejection (joining as 'Alice' again)... PASSED
+[4/8] Testing group chat broadcast from Alice to Bob & Charlie... PASSED
+[5/8] Testing Theme Feature 1 (Ticket Creation & Sync)... PASSED
+[6/8] Testing Theme Feature 2 (Helper Claim & Resolution)... PASSED
+[7/8] Testing slash command /name (Alice renames to Alicia)... PASSED
+[8/8] Testing disconnect resilience (Charlie exits, Alice and Bob remain)... PASSED
 ```
 
 ---
