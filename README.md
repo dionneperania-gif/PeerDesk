@@ -251,26 +251,6 @@ java -cp target/classes com.mycompany.peerdesk.test.SystemVerificationTest
 
 ## 👥 8. Pair Contribution Log
 
-### Actual Git Commit History
-
-All commits recorded in the repository history, verified against GitHub:
-
-| Date | Author / Partner | Commit Hash | Summary / Contribution |
-| :--- | :--- | :---: | :--- |
-| Nov 21, 2026 | Dionne Mariz Perania | `c3ed2cc` | Initial commit of complete PeerDesk client and server codebase |
-| Nov 21, 2026 | Dionne Mariz Perania | `8fc9076` | Initial README documentation and project structure |
-| Nov 21, 2026 | Dionne Mariz Perania | `46fca6c` | Bugfix: resolved server shutdown lag and clean thread exit handling |
-| Nov 21, 2026 | Dionne Mariz Perania | `dea7525` | UI improvement: disable action buttons until active server connection |
-| Nov 21, 2026 | Dionne Mariz Perania | `727595c` | Feature: clickable ticket mentions in chat with instant "Offer Help" action |
-| Nov 21, 2026 | Dionne Mariz Perania | `ff51069` | Feature: automatic ticket creation broadcast alerts directly to chat feed |
-| Nov 21, 2026 | Dionne Mariz Perania | `619576d` | Feature: activity status badges beside peer names (Needs Help / Helping / Free) |
-| Nov 22, 2026 | Dionne Mariz Perania | `0ef539f` | Security & ID: added Student ID and student name binding |
-| Nov 22, 2026 | Dionne Mariz Perania | `7090da8` | Requester tracking: enforce ticket ownership by requester nickname |
-| Nov 22, 2026 | Dionne Mariz Perania | `a589f96` | Major feature: ticket ratings, requester-only delete/resolve permissions with ID verification |
-| Nov 24, 2026 | Dionne Mariz Perania | `fb489a0` | Documentation: update course info, 8-case test table, commands, and `.gitignore` |
-
-### Division of Responsibilities
-
 | Partner | Role & Responsibilities |
 | :--- | :--- |
 | **Dionne Mariz Perania** | Core server architecture, multithreaded socket handling, Swing GUI visual design (pastel cards, bubbles), ticket rating system, Student ID validation, and repository management. |
