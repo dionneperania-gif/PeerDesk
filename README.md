@@ -181,21 +181,9 @@ All network communication uses a clean, pipe-delimited (`|`) UTF-8 text protocol
 
 ---
 
-## 🔧 7.1. Troubleshooting
+## 🧪 7. Test Results
 
-| Problem | Cause | Solution |
-|:---|:---|:---|
-| `Address already in use: bind` on server start | Port 8888 is occupied by another process | Run `free_port_8888.bat` (included in repo) or change to a different port |
-| Client cannot connect to server on another PC | Firewall blocking Java or port 8888 | On the host PC, allow Java through Windows Defender Firewall for **Private Networks** |
-| Client shows "Connection refused" | Server is not running, or wrong IP/port entered | Verify the server is started first; double-check the LAN IP shown on the Server Control Panel |
-| Blank square characters (`□`) in the UI | System font missing or incompatible | PeerDesk already uses safe fallback fonts (`Georgia` → `Serif`, `Segoe UI` → `SansSerif`). Update your JDK if issue persists |
-| `mvn` command not found in terminal | Maven not on system PATH | Use NetBeans' built-in Run (F6) instead, or add Maven's `bin/` folder to your system PATH |
-
----
-
-## 🧪 8. Test Results
-
-### 8.1. Automated System Verification
+### 7.1. Automated System Verification
 
 PeerDesk includes an automated verification test class (`com.mycompany.peerdesk.test.SystemVerificationTest`). Run it in NetBeans or via terminal:
 
@@ -204,7 +192,7 @@ mvn compile
 java -cp target/classes com.mycompany.peerdesk.test.SystemVerificationTest
 ```
 
-### 8.2. Test Table
+### 7.2. Test Table
 
 | # | Test Case | Steps | Expected Result | Actual Result | Status |
 |:---:|:---|:---|:---|:---|:---:|
@@ -219,7 +207,7 @@ java -cp target/classes com.mycompany.peerdesk.test.SystemVerificationTest
 
 > **Result: 8 / 8 tests passed (100%)**
 
-### 8.3. Console Output Evidence
+### 7.3. Console Output Evidence
 
 ```
 =================================================
@@ -265,7 +253,7 @@ ALL 8 SYSTEM VERIFICATION TESTS PASSED SUCCESSFULLY! 100% COMPLIANT WITH RUBRIC.
 
 ---
 
-## 👥 9. Pair Contribution Log
+## 👥 8. Pair Contribution Log
 
 ### Actual Git Commit History
 
