@@ -21,19 +21,57 @@ A multithreaded Java LAN chat application designed for student study groups, lab
 
 ---
 
-## 📌 1. Concept Proposal
+## 📌 1. Project Concept & Theme
 
 * **Application Name**: PeerDesk
-* **Target Audience**: Classmates and lab partners collaborating on programming assignments, coursework, and technical problem-solving.
-* **Core Problem Addressed**: Standard group chats quickly become cluttered with mixed conversation, making it easy for questions, lab bugs, and requests for help to get buried or ignored. Students also have no clear way of knowing who is currently helping whom.
-* **Two Original Theme Features**:
-  1. **Synchronized Peer Help Ticket Board**: Any student can post a dedicated help ticket with a problem category (e.g., *Java / Sockets*, *GUI / Swing*, *Algorithms*) and a short description. Tickets sync in real-time across all connected peers with visual status badges (`[OPEN]`, `[IN PROGRESS]`, `[RESOLVED]`).
-  2. **Helper Claim & Resolution Workflow**: Another student can click **"Assist Peer"** to assign themselves as the active helper (updating the ticket to `[IN PROGRESS: HelperName]` across all screens), and once the peer has been helped, either peer can mark the ticket **`[RESOLVED]`**.
-* **Instructor Approval**: `[ Approved ]` *(Record date & instructor initials here)*
+* **Application Theme**: **Student LAN Collaboration & Classroom Peer Help Desk**  
+  PeerDesk transforms standard LAN chat into a structured peer-tutoring and IT help desk environment tailored for programming labs, project rooms, and collaborative coursework.
+* **Target Audience**: Classmates, student pairs, and lab partners working simultaneously on technical programming problems, debugging exercises, and team deliverables.
+* **Concept Proposal & Approval**:
+  * Proposal: A dual-purpose LAN workspace pairing real-time instant messaging with an integrated, synchronized ticket desk where students can seek, provide, and track peer technical assistance.
+  * Status: `[ Approved ]`
 
 ---
 
-## 🎨 2. Theme & Visual Style: Modern Pastel & Messenger-Style Chat
+## 💡 2. User Problem & Solution
+
+### The User Problem
+During programming lab sessions and study groups, standard group chats (such as Messenger or Discord) suffer from critical bottlenecks:
+1. **Buried Questions**: Technical questions, compiler errors, and debugging requests get quickly buried by casual conversation and unrelated chat messages.
+2. **Lack of Assistance Visibility**: Students have no visibility into who needs help, what specific category they are stuck on (e.g., Sockets, GUI, Database), or whether another classmate is already assisting them.
+3. **No Resolution Accountability**: There is no systematic way to track whether a classmate's problem was actually solved or if they are still blocked.
+
+### The Solution: PeerDesk
+PeerDesk solves these classroom bottlenecks by separating the discussion into two coordinated layers on the same screen:
+* An active **LAN Group Chat** for rapid coordination, announcements, and commands.
+* A live, synchronized **Peer Help Ticket Board** where questions are tracked as structured tickets from creation to claim and resolution.
+
+---
+
+## ⚙️ 3. Core & Original Features
+
+### Core Chat Features (LAN Socket Chat)
+* **Real-Time Group Chat**: Multithreaded TCP socket chat over local area network with instant broadcasting to all active peers.
+* **Active Peer Presence**: Dynamic live user list showing everyone currently connected to the LAN session.
+* **Slash Commands**:
+  * `/name <newname>` — Instant display name change with duplicate validation.
+  * `/help` — In-app command reference.
+  * `/exit` — Graceful socket disconnect.
+* **Connection Security & Identification**: Non-blank, duplicate-checked student nicknames and Student ID tracking.
+
+### Original Theme Features (Peer Help Desk System)
+1. **Synchronized Peer Help Ticket Board**:
+   * Any student can file a structured help ticket specifying a problem category (e.g., *Java / Sockets*, *GUI / Swing*, *Algorithms*, *General Debugging*) and problem description.
+   * Tickets broadcast instantly to every connected peer and update in real-time with visual status badges (`[OPEN]`, `[IN PROGRESS]`, `[RESOLVED]`).
+   * Chat feed automatically alerts everyone whenever a new help ticket is opened.
+2. **Helper Claim & Resolution Workflow**:
+   * Any classmate can click **"Assist Peer"** (or click the announcement in chat) to volunteer as the designated helper, automatically updating the ticket to `[IN PROGRESS: HelperName]`.
+   * Only the original requester (verified by Student ID / nickname) can confirm resolution or delete their ticket, preventing accidental or unauthorized tampering.
+   * Includes peer rating and acknowledgment upon resolution to celebrate helpful peers.
+
+---
+
+## 🎨 4. User Interface & Visual Styling
 
 The interface features a **clean, modern, pastel-styled workspace**:
 * **Full-Window Background**:
@@ -67,7 +105,7 @@ The interface features a **clean, modern, pastel-styled workspace**:
 
 ---
 
-## 🌐 3. Network Architecture & Threading Model
+## 🌐 5. Network Architecture & Threading Model
 
 ```
 [ PeerDesk Client 1 ] <--- TCP Socket ---> \
@@ -94,7 +132,7 @@ The interface features a **clean, modern, pastel-styled workspace**:
 
 ---
 
-## 📡 4. Message Protocol Specification
+## 📡 6. Message Protocol Specification
 
 All communication follows a structured, pipe-delimited text protocol:
 
@@ -119,7 +157,7 @@ All communication follows a structured, pipe-delimited text protocol:
 
 ---
 
-## 🚀 5. How to Run and Test in Apache NetBeans
+## 🚀 7. How to Run and Test in Apache NetBeans
 
 ### Prerequisites
 
@@ -172,7 +210,7 @@ All communication follows a structured, pipe-delimited text protocol:
 
 ---
 
-## 🔧 5.1. Troubleshooting
+## 🔧 7.1. Troubleshooting
 
 | Problem | Cause | Solution |
 |:---|:---|:---|
@@ -184,9 +222,9 @@ All communication follows a structured, pipe-delimited text protocol:
 
 ---
 
-## 🧪 6. Test Results
+## 🧪 8. Test Results
 
-### 6.1. Automated System Verification
+### 8.1. Automated System Verification
 
 PeerDesk includes an automated verification test class (`com.mycompany.peerdesk.test.SystemVerificationTest`). Run it in NetBeans or via terminal:
 
@@ -195,7 +233,7 @@ mvn compile
 java -cp target/classes com.mycompany.peerdesk.test.SystemVerificationTest
 ```
 
-### 6.2. Test Table
+### 8.2. Test Table
 
 | # | Test Case | Steps | Expected Result | Actual Result | Status |
 |:---:|:---|:---|:---|:---|:---:|
@@ -210,7 +248,7 @@ java -cp target/classes com.mycompany.peerdesk.test.SystemVerificationTest
 
 > **Result: 8 / 8 tests passed (100%)**
 
-### 6.3. Console Output Evidence
+### 8.3. Console Output Evidence
 
 ```
 =================================================
@@ -256,7 +294,7 @@ ALL 8 SYSTEM VERIFICATION TESTS PASSED SUCCESSFULLY! 100% COMPLIANT WITH RUBRIC.
 
 ---
 
-## 👥 7. Pair Contribution Log
+## 👥 9. Pair Contribution Log
 
 ### Actual Git Commit History
 
