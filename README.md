@@ -14,10 +14,10 @@ A multithreaded Java LAN chat application designed for student study groups, lab
 
 ## Team Members
 
-| Name | GitHub Username | Role |
-|:---|:---|:---|
-| Dionne Mariz Perania | [@dionneperania-gif](https://github.com/dionneperania-gif) | Server architecture, ticket system, Swing GUI |
-| Charl Lee Basisto | *TBD* | Protocol design, claim workflow, client networking |
+| Name | GitHub Username |
+|:---|:---|
+| Dionne Mariz Perania | [@dionneperania-gif](https://github.com/dionneperania-gif) |
+| Charl Lee Basisto | *TBD* |
 
 ---
 
