@@ -151,12 +151,11 @@ All network communication uses a clean, pipe-delimited (`|`) UTF-8 text protocol
    * **🍃 Host Server (Server Panel)**: Launches the Server Control Panel (shows detected LAN IP, port, and live activity log).
    * **🚀 Launch Both**: Starts the server and client simultaneously on your computer.
 
-### B. Testing 3 Concurrent Clients on One Computer (Localhost)
+### B. Testing Concurrent Clients on One Computer (Localhost)
 1. Run `PeerDesk` and click **"Host Server"** (or run with argument `--server`).
 2. Run `PeerDesk` again and click **"Join as Peer"** (connect as `Alice`).
 3. Run `PeerDesk` again and click **"Join as Peer"** (connect as `Bob`).
-4. Run `PeerDesk` again and click **"Join as Peer"** (connect as `Charlie`).
-5. You can now chat between all three windows, post tickets, claim them, and test `/name`, `/help`, and `/exit`.
+4. You can now chat between windows, post tickets, claim them, and test `/name`, `/help`, and `/exit`.
 
 ### C. Testing Across Two Computers on the Same LAN / Wi-Fi
 1. Ensure both computers are connected to the same Wi-Fi or router network.
@@ -233,27 +232,25 @@ java -cp target/classes com.mycompany.peerdesk.test.SystemVerificationTest
 
 ## 📸 Screenshots
 
-> **TODO**: Add labeled screenshots to a `screenshots/` folder in this repository and update the paths below.
-
 ### Launcher Window
-<!-- ![Launcher Window](screenshots/launcher.png) -->
-*Screenshot: The PeerDesk launcher showing "Join as Peer", "Host Server", and "Launch Both" buttons.*
+![Launcher Window](screenshots/launcher.png)
+*The PeerDesk launcher showing "Join as Peer", "Host Server", and "Launch Both" buttons.*
 
 ### Server Control Panel
-<!-- ![Server Control Panel](screenshots/server-panel.png) -->
-*Screenshot: Server running on port 8888 with LAN IP display and live activity log.*
+![Server Control Panel](screenshots/server-panel.png)
+*Server running on port 8888 with LAN IP display and live activity log.*
 
-### Client Chat Window (Messenger-Style Bubbles)
-<!-- ![Client Chat](screenshots/client-chat.png) -->
-*Screenshot: Chat interface with pastel pink outgoing bubbles (right) and pastel green incoming bubbles (left).*
+### Client Chat Window
+![Client Chat](screenshots/client-chat.png)
+*Chat interface showing message conversation feed, online user list, and composer.*
 
 ### Peer Help Ticket Board
-<!-- ![Ticket Board](screenshots/ticket-board.png) -->
-*Screenshot: Ticket board showing tickets with [OPEN], [IN PROGRESS], and [RESOLVED] status badges.*
+![Ticket Board](screenshots/ticket-board.png)
+*Ticket board showing active help tickets, categories, and status badges.*
 
-### 3-Client Concurrent Test
-<!-- ![3 Clients](screenshots/three-clients.png) -->
-*Screenshot: Three client windows (Alice, Bob, Charlie) connected simultaneously on localhost.*
+### Two Clients Concurrent Test
+![Two Clients](screenshots/two-clients.png)
+*Two client windows connected concurrently on localhost.*
 
 ---
 
