@@ -10,7 +10,7 @@ A multithreaded Java LAN chat application designed for student study groups, lab
 |:---|:---|
 | **Course** | ITAS 1 — IT Application and Development with Specialization |
 | **Section** | BSIT 2B SD |
-| **Institution** | ISUFST (Iligan Institute of Technology) |
+| **Institution** | ISUFST (Iloilo State University of Fisheries, Science, and Technology) |
 
 ## Team Members
 
